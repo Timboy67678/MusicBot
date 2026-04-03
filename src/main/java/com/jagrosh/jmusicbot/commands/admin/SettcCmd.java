@@ -17,12 +17,17 @@ package com.jagrosh.jmusicbot.commands.admin;
 
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -36,6 +41,7 @@ public class SettcCmd extends AdminCommand
         this.help = "sets the text channel for music commands";
         this.arguments = "<channel|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(new OptionData(OptionType.CHANNEL, "channel", "Text channel for music commands (omit to clear)", false).setChannelTypes(ChannelType.TEXT));
     }
     
     @Override
@@ -66,5 +72,22 @@ public class SettcCmd extends AdminCommand
             }
         }
     }
-    
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkAdminPermission(event)) { event.reply(event.getClient().getError() + " You must have Manage Server permission to use this command!").setEphemeral(true).queue(); return; }
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        TextChannel channel = (TextChannel) event.optGuildChannel("channel");
+        if(channel == null)
+        {
+            s.setTextChannel(null);
+            event.reply(event.getClient().getSuccess() + " Music commands can now be used in any channel.").queue();
+        }
+        else
+        {
+            s.setTextChannel(channel);
+            event.reply(event.getClient().getSuccess() + " Music commands can now only be used in " + channel.getAsMention()).queue();
+        }
+    }
 }

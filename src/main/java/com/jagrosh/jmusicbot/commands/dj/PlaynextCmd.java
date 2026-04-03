@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.QueuedTrack;
@@ -28,6 +29,10 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -47,6 +52,7 @@ public class PlaynextCmd extends DJCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.beListening = true;
         this.bePlaying = false;
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "query", "Song title or URL", true));
     }
     
     @Override
@@ -126,6 +132,74 @@ public class PlaynextCmd extends DJCommand
                 m.editMessage(event.getClient().getError()+" Error loading: "+throwable.getMessage()).queue();
             else
                 m.editMessage(event.getClient().getError()+" Error loading track.").queue();
+        }
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        String query = event.optString("query", "");
+        event.deferReply().queue();
+        bot.getPlayerManager().loadItemOrdered(event.getGuild(), query, new SlashResultHandler(event.getHook(), event, query));
+    }
+
+    private class SlashResultHandler implements AudioLoadResultHandler
+    {
+        private final InteractionHook hook;
+        private final SlashCommandEvent event;
+        private final String query;
+
+        private SlashResultHandler(InteractionHook hook, SlashCommandEvent event, String query)
+        {
+            this.hook = hook;
+            this.event = event;
+            this.query = query;
+        }
+
+        private void loadSingle(AudioTrack track)
+        {
+            if(bot.getConfig().isTooLong(track))
+            {
+                hook.editOriginal(FormatUtil.filter(event.getClient().getWarning() + " This track (**" + track.getInfo().title + "**) is longer than the allowed maximum: `"
+                        + TimeUtil.formatTime(track.getDuration()) + "` > `" + TimeUtil.formatTime(bot.getConfig().getMaxSeconds() * 1000) + "`")).queue();
+                return;
+            }
+            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+            int pos = handler.addTrackToFront(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event))) + 1;
+            String addMsg = FormatUtil.filter(event.getClient().getSuccess() + " Added **" + track.getInfo().title
+                    + "** (`" + TimeUtil.formatTime(track.getDuration()) + "`) " + (pos == 0 ? "to begin playing" : " to the queue at position " + pos));
+            hook.editOriginal(addMsg).queue();
+        }
+
+        @Override
+        public void trackLoaded(AudioTrack track) { loadSingle(track); }
+
+        @Override
+        public void playlistLoaded(AudioPlaylist playlist)
+        {
+            AudioTrack single;
+            if(playlist.getTracks().size() == 1 || playlist.isSearchResult())
+                single = playlist.getSelectedTrack() == null ? playlist.getTracks().get(0) : playlist.getSelectedTrack();
+            else if(playlist.getSelectedTrack() != null)
+                single = playlist.getSelectedTrack();
+            else
+                single = playlist.getTracks().get(0);
+            loadSingle(single);
+        }
+
+        @Override
+        public void noMatches()
+        {
+            hook.editOriginal(FormatUtil.filter(event.getClient().getWarning() + " No results found for `" + query + "`.")).queue();
+        }
+
+        @Override
+        public void loadFailed(FriendlyException throwable)
+        {
+            if(throwable.severity == FriendlyException.Severity.COMMON)
+                hook.editOriginal(event.getClient().getError() + " Error loading: " + throwable.getMessage()).queue();
+            else
+                hook.editOriginal(event.getClient().getError() + " Error loading track.").queue();
         }
     }
 }

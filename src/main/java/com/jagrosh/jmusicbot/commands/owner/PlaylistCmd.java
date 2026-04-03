@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 import com.jagrosh.jmusicbot.playlist.PlaylistLoader.Playlist;
@@ -56,6 +57,13 @@ public class PlaylistCmd extends OwnerCommand
                     .append(" ").append(cmd.getArguments()==null ? "" : cmd.getArguments()).append("` - ").append(cmd.getHelp());
         event.reply(builder.toString());
     }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        event.reply(event.getClient().getWarning() + " Please use the prefix command `playlist` to manage playlists.").setEphemeral(true).queue();
+    }
     
     public class MakelistCmd extends OwnerCommand 
     {
@@ -92,6 +100,12 @@ public class PlaylistCmd extends OwnerCommand
             else
                 event.reply(event.getClient().getError()+" Playlist `"+pname+"` already exists!");
         }
+
+        @Override
+        protected void execute(SlashCommandEvent event)
+        {
+            event.reply(event.getClient().getWarning() + " Please use the prefix command `playlist make <name>` to create playlists.").setEphemeral(true).queue();
+        }
     }
     
     public class DeletelistCmd extends OwnerCommand 
@@ -123,6 +137,12 @@ public class PlaylistCmd extends OwnerCommand
                     event.reply(event.getClient().getError()+" I was unable to delete the playlist: "+e.getLocalizedMessage());
                 }
             }
+        }
+
+        @Override
+        protected void execute(SlashCommandEvent event)
+        {
+            event.reply(event.getClient().getWarning() + " Please use the prefix command `playlist delete <name>` to delete playlists.").setEphemeral(true).queue();
         }
     }
     
@@ -173,6 +193,12 @@ public class PlaylistCmd extends OwnerCommand
                 }
             }
         }
+
+        @Override
+        protected void execute(SlashCommandEvent event)
+        {
+            event.reply(event.getClient().getWarning() + " Please use the prefix command `playlist append <name> <URL>` to add songs.").setEphemeral(true).queue();
+        }
     }
     
     public class DefaultlistCmd extends AutoplaylistCmd 
@@ -183,7 +209,6 @@ public class PlaylistCmd extends OwnerCommand
             this.name = "setdefault";
             this.aliases = new String[]{"default"};
             this.arguments = "<playlistname|NONE>";
-            this.guildOnly = true;
         }
     }
     
@@ -194,7 +219,6 @@ public class PlaylistCmd extends OwnerCommand
             this.name = "all";
             this.aliases = new String[]{"available","list"};
             this.help = "lists all available playlists";
-            this.guildOnly = true;
         }
 
         @Override
@@ -218,6 +242,12 @@ public class PlaylistCmd extends OwnerCommand
                 list.forEach(str -> builder.append("`").append(str).append("` "));
                 event.reply(builder.toString());
             }
+        }
+
+        @Override
+        protected void execute(SlashCommandEvent event)
+        {
+            event.reply(event.getClient().getWarning() + " Please use the prefix command `playlist all` to list playlists.").setEphemeral(true).queue();
         }
     }
 }

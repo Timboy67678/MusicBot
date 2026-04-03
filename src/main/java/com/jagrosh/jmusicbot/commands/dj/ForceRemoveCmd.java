@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jdautilities.menu.OrderedMenu;
 import com.jagrosh.jmusicbot.Bot;
@@ -25,7 +26,9 @@ import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
-
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +48,7 @@ public class ForceRemoveCmd extends DJCommand
         this.beListening = false;
         this.bePlaying = true;
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
+        this.options = Arrays.asList(new OptionData(OptionType.USER, "user", "The user whose songs to remove", true));
     }
 
     @Override
@@ -108,13 +112,35 @@ public class ForceRemoveCmd extends DJCommand
     private void removeAllEntries(User target, CommandEvent event)
     {
         int count = ((AudioHandler) event.getGuild().getAudioManager().getSendingHandler()).getQueue().removeAll(target.getIdLong());
-        if (count == 0)
+        if(count == 0)
         {
-            event.replyWarning("**"+target.getName()+"** doesn't have any songs in the queue!");
+            event.replyWarning("**" + target.getName() + "** doesn't have any songs in the queue!");
         }
         else
         {
-            event.replySuccess("Successfully removed `"+count+"` entries from "+FormatUtil.formatUsername(target)+".");
+            event.replySuccess("Successfully removed `" + count + "` entries from " + FormatUtil.formatUsername(target) + ".");
+        }
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        Member targetMember = event.optMember("user");
+        if(targetMember == null)
+        {
+            event.reply(event.getClient().getError() + " Could not find the specified user.").setEphemeral(true).queue();
+            return;
+        }
+        User target = targetMember.getUser();
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        int count = handler.getQueue().removeAll(target.getIdLong());
+        if(count == 0)
+        {
+            event.reply(event.getClient().getWarning() + " **" + target.getName() + "** doesn't have any songs in the queue!").queue();
+        }
+        else
+        {
+            event.reply(event.getClient().getSuccess() + " Successfully removed `" + count + "` entries from " + FormatUtil.formatUsername(target) + ".").queue();
         }
     }
 }

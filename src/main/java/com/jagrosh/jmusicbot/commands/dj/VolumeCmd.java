@@ -16,11 +16,15 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -35,6 +39,7 @@ public class VolumeCmd extends DJCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.help = "sets or shows volume";
         this.arguments = "[0-300]";
+        this.options = Arrays.asList(new OptionData(OptionType.INTEGER, "volume", "New volume (0-300, default shows current)", false).setMinValue(0).setMaxValue(300));
     }
 
     @Override
@@ -66,5 +71,24 @@ public class VolumeCmd extends DJCommand
             }
         }
     }
-    
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        int volume = handler.getPlayer().getVolume();
+        if(!event.hasOption("volume"))
+        {
+            event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue();
+        }
+        else
+        {
+            int nvolume = (int) event.optLong("volume", -1);
+            handler.getPlayer().setVolume(Math.min(nvolume, 100));
+            settings.setVolume(nvolume);
+            bot.getPlayerManager().applyEqGain(nvolume);
+            event.reply(FormatUtil.volumeIcon(nvolume) + " Volume changed from `" + volume + "` to `" + nvolume + "`").queue();
+        }
+    }
 }

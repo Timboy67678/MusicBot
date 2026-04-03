@@ -16,11 +16,15 @@
 package com.jagrosh.jmusicbot.commands.admin;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.QueueType;
 import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -35,6 +39,11 @@ public class QueueTypeCmd extends AdminCommand
         this.help = "changes the queue type";
         this.arguments = "[" + String.join("|", QueueType.getNames()) + "]";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(
+            new OptionData(OptionType.STRING, "type", "Queue type", false)
+                .addChoice("linear", "LINEAR")
+                .addChoice("fair", "FAIR")
+        );
     }
 
     @Override
@@ -71,5 +80,33 @@ public class QueueTypeCmd extends AdminCommand
         }
 
         event.reply(value.getEmoji() + " Queue type was set to `" + value.getUserFriendlyName() + "`.");
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkAdminPermission(event)) { event.reply(event.getClient().getError() + " You must have Manage Server permission to use this command!").setEphemeral(true).queue(); return; }
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        String typeArg = event.optString("type", "");
+        if(typeArg.isEmpty())
+        {
+            QueueType currentType = settings.getQueueType();
+            event.reply(currentType.getEmoji() + " Current queue type is: `" + currentType.getUserFriendlyName() + "`." ).queue();
+            return;
+        }
+        QueueType value;
+        try { value = QueueType.valueOf(typeArg.toUpperCase()); }
+        catch(IllegalArgumentException e)
+        {
+            event.reply(event.getClient().getError() + " Invalid queue type.").setEphemeral(true).queue();
+            return;
+        }
+        if(settings.getQueueType() != value)
+        {
+            settings.setQueueType(value);
+            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+            if(handler != null) handler.setQueueType(value);
+        }
+        event.reply(value.getEmoji() + " Queue type was set to `" + value.getUserFriendlyName() + "`.").queue();
     }
 }

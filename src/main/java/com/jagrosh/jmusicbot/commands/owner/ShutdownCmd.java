@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.owner;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 
@@ -40,6 +41,14 @@ public class ShutdownCmd extends OwnerCommand
     protected void execute(CommandEvent event)
     {
         event.replyWarning("Shutting down...");
+        bot.shutdown();
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        event.reply(event.getClient().getWarning() + " Shutting down...").queue();
         bot.shutdown();
     }
 }

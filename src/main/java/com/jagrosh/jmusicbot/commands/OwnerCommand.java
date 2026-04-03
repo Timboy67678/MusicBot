@@ -15,17 +15,24 @@
  */
 package com.jagrosh.jmusicbot.commands;
 
-import com.jagrosh.jdautilities.command.Command;
+import com.jagrosh.jdautilities.command.SlashCommand;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 
 /**
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public abstract class OwnerCommand extends Command
+public abstract class OwnerCommand extends SlashCommand
 {
     public OwnerCommand()
     {
         this.category = new Category("Owner");
         this.ownerCommand = true;
+    }
+
+    /** Checks that the slash user is the bot owner. */
+    protected static boolean checkOwnerPermission(SlashCommandEvent event)
+    {
+        return event.getUser().getId().equals(event.getClient().getOwnerId());
     }
 }

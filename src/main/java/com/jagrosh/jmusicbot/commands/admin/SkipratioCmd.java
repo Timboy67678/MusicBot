@@ -16,9 +16,13 @@
 package com.jagrosh.jmusicbot.commands.admin;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -32,6 +36,7 @@ public class SkipratioCmd extends AdminCommand
         this.help = "sets a server-specific skip percentage";
         this.arguments = "<0 - 100>";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(new OptionData(OptionType.INTEGER, "ratio", "Skip vote percentage (0-100)", true).setMinValue(0).setMaxValue(100));
     }
     
     @Override
@@ -53,5 +58,15 @@ public class SkipratioCmd extends AdminCommand
         {
             event.replyError("Please include an integer between 0 and 100 (default is 55). This number is the percentage of listening users that must vote to skip a song.");
         }
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkAdminPermission(event)) { event.reply(event.getClient().getError() + " You must have Manage Server permission to use this command!").setEphemeral(true).queue(); return; }
+        int val = (int) event.optLong("ratio", -1);
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        s.setSkipRatio(val / 100.0);
+        event.reply(event.getClient().getSuccess() + " Skip percentage has been set to `" + val + "%` of listeners on *" + event.getGuild().getName() + "*").queue();
     }
 }

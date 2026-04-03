@@ -16,9 +16,13 @@
 package com.jagrosh.jmusicbot.commands.owner;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -31,11 +35,11 @@ public class AutoplaylistCmd extends OwnerCommand
     public AutoplaylistCmd(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = true;
         this.name = "autoplaylist";
         this.arguments = "<name|NONE>";
         this.help = "sets the default playlist for the server";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "playlist", "Playlist name, or omit to clear", false));
     }
 
     @Override
@@ -65,4 +69,29 @@ public class AutoplaylistCmd extends OwnerCommand
             event.reply(event.getClient().getSuccess()+" The default playlist for **"+event.getGuild().getName()+"** is now `"+pname+"`");
         }
     }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        String playlist = event.optString("playlist", "");
+        if(playlist.isEmpty())
+        {
+            settings.setDefaultPlaylist(null);
+            event.reply(event.getClient().getSuccess() + " Cleared the default playlist for **" + event.getGuild().getName() + "**").queue();
+        }
+        else
+        {
+            String pname = playlist.replaceAll("\\s+", "_");
+            if(bot.getPlaylistLoader().getPlaylist(pname) == null)
+                event.reply(event.getClient().getError() + " Could not find `" + pname + ".txt`!").setEphemeral(true).queue();
+            else
+            {
+                settings.setDefaultPlaylist(pname);
+                event.reply(event.getClient().getSuccess() + " The default playlist for **" + event.getGuild().getName() + "** is now `" + pname + "`").queue();
+            }
+        }
+    }
 }
+

@@ -18,9 +18,13 @@ package com.jagrosh.jmusicbot.commands.owner;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -39,6 +43,7 @@ public class EvalCmd extends OwnerCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.engine = bot.getConfig().getEvalEngine();
         this.guildOnly = false;
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "code", "Code to evaluate", true));
     }
     
     @Override
@@ -67,5 +72,27 @@ public class EvalCmd extends OwnerCommand
             event.reply(event.getClient().getError()+" An exception was thrown:\n```\n"+e+" ```");
         }
     }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        ScriptEngine se = new ScriptEngineManager().getEngineByName(engine);
+        if(se == null) { event.reply(event.getClient().getError() + " Eval engine `" + engine + "` not available.").setEphemeral(true).queue(); return; }
+        String code = event.optString("code", "");
+        se.put("bot", bot);
+        se.put("event", event);
+        se.put("jda", event.getJDA());
+        if(event.isFromGuild()) { se.put("guild", event.getGuild()); se.put("channel", event.getChannel()); }
+        try
+        {
+            event.reply(event.getClient().getSuccess() + " Evaluated:\n```\n" + se.eval(code) + " ```").setEphemeral(true).queue();
+        }
+        catch(Exception e)
+        {
+            event.reply(event.getClient().getError() + " Exception:\n```\n" + e + " ```").setEphemeral(true).queue();
+        }
+    }
     
 }
+

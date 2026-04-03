@@ -2,11 +2,15 @@ package com.jagrosh.jmusicbot.commands.dj;
 
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.QueuedTrack;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.queue.AbstractQueue;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  * Command that provides users the ability to move a track in the playlist.
@@ -22,6 +26,10 @@ public class MoveTrackCmd extends DJCommand
         this.arguments = "<from> <to>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
+        this.options = Arrays.asList(
+            new OptionData(OptionType.INTEGER, "from", "Position to move from", true).setMinValue(1),
+            new OptionData(OptionType.INTEGER, "to", "Position to move to", true).setMinValue(1)
+        );
     }
 
     @Override
@@ -81,5 +89,32 @@ public class MoveTrackCmd extends DJCommand
     private static boolean isUnavailablePosition(AbstractQueue<QueuedTrack> queue, int position)
     {
         return (position < 1 || position > queue.size());
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        int from = (int) event.optLong("from", 0);
+        int to = (int) event.optLong("to", 0);
+        if(from == to)
+        {
+            event.reply(event.getClient().getError() + " Can't move a track to the same position.").setEphemeral(true).queue();
+            return;
+        }
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        AbstractQueue<QueuedTrack> queue = handler.getQueue();
+        if(isUnavailablePosition(queue, from))
+        {
+            event.reply(event.getClient().getError() + " `" + from + "` is not a valid position in the queue!").setEphemeral(true).queue();
+            return;
+        }
+        if(isUnavailablePosition(queue, to))
+        {
+            event.reply(event.getClient().getError() + " `" + to + "` is not a valid position in the queue!").setEphemeral(true).queue();
+            return;
+        }
+        QueuedTrack track = queue.moveItem(from - 1, to - 1);
+        String trackTitle = track.getTrack().getInfo().title;
+        event.reply(event.getClient().getSuccess() + " Moved **" + trackTitle + "** from position `" + from + "` to `" + to + "`.").queue();
     }
 }

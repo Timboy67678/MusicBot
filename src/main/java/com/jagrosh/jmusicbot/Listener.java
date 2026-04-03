@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.jagrosh.jdautilities.command.impl.CommandClientImpl;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -54,6 +55,15 @@ public class Listener extends ListenerAdapter
             log.warn(event.getJDA().getInviteUrl(JMusicBot.RECOMMENDED_PERMS));
         }
         credit(event.getJDA());
+
+        // Clear any existing global slash commands
+        event.getJDA().updateCommands().queue();
+
+        // Register slash commands to every guild the bot is currently in
+        CommandClientImpl client = (CommandClientImpl) bot.getClient();
+        event.getJDA().getGuilds().forEach(guild ->
+            client.upsertInteractions(event.getJDA(), guild.getId()));
+
         event.getJDA().getGuilds().forEach((guild) -> 
         {
             try
@@ -110,6 +120,8 @@ public class Listener extends ListenerAdapter
     public void onGuildJoin(GuildJoinEvent event) 
     {
         credit(event.getJDA());
+        // Register slash commands to the newly joined guild immediately
+        ((CommandClientImpl) bot.getClient()).upsertInteractions(event.getJDA(), event.getGuild().getId());
     }
     
     // make sure people aren't adding clones to dbots

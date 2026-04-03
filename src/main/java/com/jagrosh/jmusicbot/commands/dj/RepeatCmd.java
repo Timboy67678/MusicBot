@@ -16,10 +16,14 @@
 package com.jagrosh.jmusicbot.commands.dj;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -34,7 +38,12 @@ public class RepeatCmd extends DJCommand
         this.help = "re-adds music to the queue when finished";
         this.arguments = "[off|all|single]";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = true;
+        this.options = Arrays.asList(
+            new OptionData(OptionType.STRING, "mode", "Repeat mode", false)
+                .addChoice("off", "off")
+                .addChoice("all", "all")
+                .addChoice("single", "single")
+        );
     }
     
     // override musiccommand's execute because we don't actually care where this is used
@@ -74,4 +83,35 @@ public class RepeatCmd extends DJCommand
 
     @Override
     public void doCommand(CommandEvent event) { /* Intentionally Empty */ }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        if(!DJCommand.checkDJPermission(event))
+        {
+            event.reply(event.getClient().getError() + " Only DJs can change the repeat mode!").setEphemeral(true).queue();
+            return;
+        }
+        String modeArg = event.optString("mode", "");
+        RepeatMode value;
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        if(modeArg.isEmpty())
+        {
+            value = (settings.getRepeatMode() == RepeatMode.OFF) ? RepeatMode.ALL : RepeatMode.OFF;
+        }
+        else if(modeArg.equalsIgnoreCase("off") || modeArg.equalsIgnoreCase("false"))
+        {
+            value = RepeatMode.OFF;
+        }
+        else if(modeArg.equalsIgnoreCase("all") || modeArg.equalsIgnoreCase("on"))
+        {
+            value = RepeatMode.ALL;
+        }
+        else
+        {
+            value = RepeatMode.SINGLE;
+        }
+        settings.setRepeatMode(value);
+        event.reply(event.getClient().getSuccess() + " Repeat mode is now `" + value.getUserFriendlyName() + "`").queue();
+    }
 }

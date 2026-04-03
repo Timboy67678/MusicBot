@@ -26,6 +26,7 @@ import com.jagrosh.jmusicbot.gui.GUI;
 import com.jagrosh.jmusicbot.playlist.PlaylistLoader;
 import com.jagrosh.jmusicbot.settings.SettingsManager;
 import java.util.Objects;
+import com.jagrosh.jdautilities.command.CommandClient;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
@@ -48,6 +49,7 @@ public class Bot
     
     private boolean shuttingDown = false;
     private JDA jda;
+    private CommandClient client;
     private GUI gui;
     
     public Bot(EventWaiter waiter, BotConfig config, SettingsManager settings)
@@ -155,6 +157,16 @@ public class Bot
     public void setJDA(JDA jda)
     {
         this.jda = jda;
+    }
+    
+    public void setClient(CommandClient client)
+    {
+        this.client = client;
+    }
+    
+    public CommandClient getClient()
+    {
+        return client;
     }
     
     public void setGUI(GUI gui)

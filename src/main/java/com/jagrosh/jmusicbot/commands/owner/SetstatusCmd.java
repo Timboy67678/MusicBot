@@ -16,9 +16,13 @@
 package com.jagrosh.jmusicbot.commands.owner;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -33,6 +37,13 @@ public class SetstatusCmd extends OwnerCommand
         this.arguments = "<status>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
+        this.options = Arrays.asList(
+            new OptionData(OptionType.STRING, "status", "Bot online status", true)
+                .addChoice("Online", "online")
+                .addChoice("Idle", "idle")
+                .addChoice("Do Not Disturb", "dnd")
+                .addChoice("Invisible", "invisible")
+        );
     }
     
     @Override
@@ -51,6 +62,24 @@ public class SetstatusCmd extends OwnerCommand
             }
         } catch(Exception e) {
             event.reply(event.getClient().getError()+" The status could not be set!");
+        }
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        String key = event.optString("status", "online");
+        try
+        {
+            OnlineStatus status = OnlineStatus.fromKey(key);
+            if(status == OnlineStatus.UNKNOWN) { event.reply(event.getClient().getError() + " Unknown status!").setEphemeral(true).queue(); return; }
+            event.getJDA().getPresence().setStatus(status);
+            event.reply(event.getClient().getSuccess() + " Set the status to `" + status.getKey().toUpperCase() + "`").queue();
+        }
+        catch(Exception e)
+        {
+            event.reply(event.getClient().getError() + " The status could not be set!").setEphemeral(true).queue();
         }
     }
 }

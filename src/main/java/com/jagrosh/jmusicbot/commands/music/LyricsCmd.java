@@ -16,12 +16,16 @@
 package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jlyrics.LyricsClient;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -39,6 +43,7 @@ public class LyricsCmd extends MusicCommand
         this.help = "shows the lyrics of a song";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "title", "Song name (defaults to currently playing track)", false));
     }
 
     @Override
@@ -95,6 +100,56 @@ public class LyricsCmd extends MusicCommand
             }
             else
                 event.reply(eb.setDescription(lyrics.getContent()).build());
+        });
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        String title;
+        String titleArg = event.optString("title", "");
+        if(titleArg.isEmpty())
+        {
+            AudioHandler sendingHandler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+            if(sendingHandler.isMusicPlaying(event.getJDA()))
+                title = sendingHandler.getPlayer().getPlayingTrack().getInfo().title;
+            else
+            {
+                event.reply(event.getClient().getError() + " There must be music playing to use that!").setEphemeral(true).queue();
+                return;
+            }
+        }
+        else
+            title = titleArg;
+
+        // Defer since lyrics fetching is async
+        event.deferReply().queue();
+        client.getLyrics(title).thenAccept(lyrics ->
+        {
+            if(lyrics == null)
+            {
+                event.getHook().editOriginal(event.getClient().getError() + " Lyrics for `" + title + "` could not be found!"
+                        + (titleArg.isEmpty() ? " Try specifying the title with `/lyrics title:<song name>`" : "")).queue();
+                return;
+            }
+            EmbedBuilder eb = new EmbedBuilder()
+                    .setAuthor(lyrics.getAuthor())
+                    .setColor(event.getMember().getColor())
+                    .setTitle(lyrics.getTitle(), lyrics.getURL());
+            if(lyrics.getContent().length() > 15000)
+            {
+                event.getHook().editOriginal(event.getClient().getWarning() + " Lyrics for `" + title + "` found but likely not correct: " + lyrics.getURL()).queue();
+            }
+            else if(lyrics.getContent().length() > 4096)
+            {
+                // Discord embed description limit is 4096 chars — truncate gracefully
+                String truncated = lyrics.getContent().substring(0, 4093) + "...";
+                event.getHook().editOriginalEmbeds(eb.setDescription(truncated).build()).queue();
+            }
+            else
+            {
+                event.getHook().editOriginalEmbeds(eb.setDescription(lyrics.getContent()).build()).queue();
+            }
         });
     }
 }

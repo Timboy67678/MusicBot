@@ -17,12 +17,17 @@ package com.jagrosh.jmusicbot.commands.admin;
 
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -36,6 +41,7 @@ public class SetvcCmd extends AdminCommand
         this.help = "sets the voice channel for playing music";
         this.arguments = "<channel|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(new OptionData(OptionType.CHANNEL, "channel", "Voice channel for music (omit to clear)", false).setChannelTypes(ChannelType.VOICE));
     }
     
     @Override
@@ -64,6 +70,24 @@ public class SetvcCmd extends AdminCommand
                 s.setVoiceChannel(list.get(0));
                 event.reply(event.getClient().getSuccess()+" Music can now only be played in "+list.get(0).getAsMention());
             }
+        }
+    }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkAdminPermission(event)) { event.reply(event.getClient().getError() + " You must have Manage Server permission to use this command!").setEphemeral(true).queue(); return; }
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        VoiceChannel channel = (VoiceChannel) event.optGuildChannel("channel");
+        if(channel == null)
+        {
+            s.setVoiceChannel(null);
+            event.reply(event.getClient().getSuccess() + " Music can now be played in any channel.").queue();
+        }
+        else
+        {
+            s.setVoiceChannel(channel);
+            event.reply(event.getClient().getSuccess() + " Music can now only be played in " + channel.getAsMention()).queue();
         }
     }
 }

@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
@@ -37,11 +38,11 @@ public class ShuffleCmd extends MusicCommand
     }
 
     @Override
-    public void doCommand(CommandEvent event) 
+    public void doCommand(CommandEvent event)
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         int s = handler.getQueue().shuffle(event.getAuthor().getIdLong());
-        switch (s) 
+        switch (s)
         {
             case 0:
                 event.replyError("You don't have any music in the queue to shuffle!");
@@ -50,9 +51,27 @@ public class ShuffleCmd extends MusicCommand
                 event.replyWarning("You only have one song in the queue!");
                 break;
             default:
-                event.replySuccess("You successfully shuffled your "+s+" entries.");
+                event.replySuccess("You successfully shuffled your " + s + " entries.");
                 break;
         }
     }
-    
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        int s = handler.getQueue().shuffle(event.getUser().getIdLong());
+        switch (s)
+        {
+            case 0:
+                event.reply(event.getClient().getError() + " You don't have any music in the queue to shuffle!").setEphemeral(true).queue();
+                break;
+            case 1:
+                event.reply(event.getClient().getWarning() + " You only have one song in the queue!").queue();
+                break;
+            default:
+                event.reply(event.getClient().getSuccess() + " You successfully shuffled your " + s + " entries.").queue();
+                break;
+        }
+    }
 }

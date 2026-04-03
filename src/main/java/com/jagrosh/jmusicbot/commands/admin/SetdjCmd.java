@@ -17,12 +17,16 @@ package com.jagrosh.jmusicbot.commands.admin;
 
 import java.util.List;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.commons.utils.FinderUtil;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.AdminCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -36,6 +40,7 @@ public class SetdjCmd extends AdminCommand
         this.help = "sets the DJ role for certain music commands";
         this.arguments = "<rolename|NONE>";
         this.aliases = bot.getConfig().getAliases(this.name);
+        this.options = Arrays.asList(new OptionData(OptionType.ROLE, "role", "DJ role (omit to clear)", false));
     }
     
     @Override
@@ -66,5 +71,22 @@ public class SetdjCmd extends AdminCommand
             }
         }
     }
-    
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkAdminPermission(event)) { event.reply(event.getClient().getError() + " You must have Manage Server permission to use this command!").setEphemeral(true).queue(); return; }
+        Settings s = event.getClient().getSettingsFor(event.getGuild());
+        Role role = event.optRole("role");
+        if(role == null)
+        {
+            s.setDJRole(null);
+            event.reply(event.getClient().getSuccess() + " DJ role cleared; Only Admins can use the DJ commands.").queue();
+        }
+        else
+        {
+            s.setDJRole(role);
+            event.reply(event.getClient().getSuccess() + " DJ commands can now be used by users with the **" + role.getName() + "** role.").queue();
+        }
+    }
 }

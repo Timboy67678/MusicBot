@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.settings.Settings;
 import net.dv8tion.jda.api.Permission;
@@ -32,17 +33,36 @@ public abstract class DJCommand extends MusicCommand
         super(bot);
         this.category = new Category("DJ", event -> checkDJPermission(event));
     }
-    
+
+    @Override
+    protected boolean checkSlashPrivilege(SlashCommandEvent event)
+    {
+        return checkDJPermission(event);
+    }
+
     public static boolean checkDJPermission(CommandEvent event)
     {
         if(event.getAuthor().getId().equals(event.getClient().getOwnerId()))
             return true;
-        if(event.getGuild()==null)
+        if(event.getGuild() == null)
             return true;
         if(event.getMember().hasPermission(Permission.MANAGE_SERVER))
             return true;
         Settings settings = event.getClient().getSettingsFor(event.getGuild());
         Role dj = settings.getRole(event.getGuild());
-        return dj!=null && (event.getMember().getRoles().contains(dj) || dj.getIdLong()==event.getGuild().getIdLong());
+        return dj != null && (event.getMember().getRoles().contains(dj) || dj.getIdLong() == event.getGuild().getIdLong());
+    }
+
+    public static boolean checkDJPermission(SlashCommandEvent event)
+    {
+        if(event.getUser().getId().equals(event.getClient().getOwnerId()))
+            return true;
+        if(event.getGuild() == null)
+            return true;
+        if(event.getMember().hasPermission(Permission.MANAGE_SERVER))
+            return true;
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        Role dj = settings.getRole(event.getGuild());
+        return dj != null && (event.getMember().getRoles().contains(dj) || dj.getIdLong() == event.getGuild().getIdLong());
     }
 }

@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
@@ -38,11 +39,11 @@ public class NowplayingCmd extends MusicCommand
     }
 
     @Override
-    public void doCommand(CommandEvent event) 
+    public void doCommand(CommandEvent event)
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         MessageCreateData m = handler.getNowPlaying(event.getJDA());
-        if(m==null)
+        if(m == null)
         {
             event.reply(handler.getNoMusicPlaying(event.getJDA()));
             bot.getNowplayingHandler().clearLastNPMessage(event.getGuild());
@@ -50,6 +51,22 @@ public class NowplayingCmd extends MusicCommand
         else
         {
             event.reply(m, msg -> bot.getNowplayingHandler().setLastNPMessage(msg));
+        }
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+        MessageCreateData m = handler.getNowPlaying(event.getJDA());
+        if(m == null)
+        {
+            event.reply(handler.getNoMusicPlaying(event.getJDA())).queue();
+            bot.getNowplayingHandler().clearLastNPMessage(event.getGuild());
+        }
+        else
+        {
+            event.reply(m).queue(hook -> hook.retrieveOriginal().queue(msg -> bot.getNowplayingHandler().setLastNPMessage(msg)));
         }
     }
 }

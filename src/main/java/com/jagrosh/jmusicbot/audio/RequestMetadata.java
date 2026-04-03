@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot.audio;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.utils.TimeUtil;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.User;
@@ -48,6 +49,12 @@ public class RequestMetadata
     public static RequestMetadata fromResultHandler(AudioTrack track, CommandEvent event)
     {
         return new RequestMetadata(event.getAuthor(), new RequestInfo(event.getArgs(), track.getInfo().uri));
+    }
+
+    public static RequestMetadata fromResultHandler(AudioTrack track, SlashCommandEvent event)
+    {
+        String query = event.optString("query", track.getInfo().uri);
+        return new RequestMetadata(event.getUser(), new RequestInfo(query, track.getInfo().uri));
     }
     
     public static class RequestInfo

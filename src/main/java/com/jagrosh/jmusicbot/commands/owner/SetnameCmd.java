@@ -16,9 +16,13 @@
 package com.jagrosh.jmusicbot.commands.owner;
 
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.commands.OwnerCommand;
 import net.dv8tion.jda.api.exceptions.RateLimitedException;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import java.util.Arrays;
 
 /**
  *
@@ -33,6 +37,7 @@ public class SetnameCmd extends OwnerCommand
         this.arguments = "<name>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.guildOnly = false;
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "name", "New bot name", true));
     }
     
     @Override
@@ -53,4 +58,26 @@ public class SetnameCmd extends OwnerCommand
             event.reply(event.getClient().getError()+" That name is not valid!");
         }
     }
+
+    @Override
+    protected void execute(SlashCommandEvent event)
+    {
+        if(!checkOwnerPermission(event)) { event.reply(event.getClient().getError() + " Only the bot owner can use this command!").setEphemeral(true).queue(); return; }
+        String newName = event.optString("name", "");
+        try
+        {
+            String oldname = event.getJDA().getSelfUser().getName();
+            event.getJDA().getSelfUser().getManager().setName(newName).complete(false);
+            event.reply(event.getClient().getSuccess() + " Name changed from `" + oldname + "` to `" + newName + "`").queue();
+        }
+        catch(RateLimitedException e)
+        {
+            event.reply(event.getClient().getError() + " Name can only be changed twice per hour!").setEphemeral(true).queue();
+        }
+        catch(Exception e)
+        {
+            event.reply(event.getClient().getError() + " That name is not valid!").setEphemeral(true).queue();
+        }
+    }
 }
+

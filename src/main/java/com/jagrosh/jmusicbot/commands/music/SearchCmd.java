@@ -22,8 +22,12 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.jagrosh.jdautilities.menu.OrderedMenu;
 import com.jagrosh.jmusicbot.Bot;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
@@ -32,6 +36,12 @@ import com.jagrosh.jmusicbot.commands.MusicCommand;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.selections.SelectOption;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 
 /**
  *
@@ -54,6 +64,7 @@ public class SearchCmd extends MusicCommand
         this.beListening = true;
         this.bePlaying = false;
         this.botPermissions = new Permission[]{Permission.MESSAGE_EMBED_LINKS};
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "query", "What to search for", true));
         builder = new OrderedMenu.Builder()
                 .allowTextInput(true)
                 .useNumbers()
@@ -62,15 +73,28 @@ public class SearchCmd extends MusicCommand
                 .setTimeout(1, TimeUnit.MINUTES);
     }
     @Override
-    public void doCommand(CommandEvent event) 
+    public void doCommand(CommandEvent event)
     {
         if(event.getArgs().isEmpty())
         {
             event.replyError("Please include a query.");
             return;
         }
-        event.reply(searchingEmoji+" Searching... `["+event.getArgs()+"]`", 
-                m -> bot.getPlayerManager().loadItemOrdered(event.getGuild(), searchPrefix + event.getArgs(), new ResultHandler(m,event)));
+        event.reply(searchingEmoji + " Searching... `[" + event.getArgs() + "]`",
+                m -> bot.getPlayerManager().loadItemOrdered(event.getGuild(), searchPrefix + event.getArgs(), new ResultHandler(m, event)));
+    }
+
+    @Override
+    public void doCommand(SlashCommandEvent event)
+    {
+        String query = event.optString("query", "");
+        if(query.isEmpty())
+        {
+            event.reply(event.getClient().getError() + " Please include a query.").setEphemeral(true).queue();
+            return;
+        }
+        event.deferReply().queue();
+        bot.getPlayerManager().loadItemOrdered(event.getGuild(), searchPrefix + query, new SlashResultHandler(event, query));
     }
     
     private class ResultHandler implements AudioLoadResultHandler 
@@ -139,12 +163,105 @@ public class SearchCmd extends MusicCommand
         }
 
         @Override
-        public void loadFailed(FriendlyException throwable) 
+        public void loadFailed(FriendlyException throwable)
         {
-            if(throwable.severity==Severity.COMMON)
-                m.editMessage(event.getClient().getError()+" Error loading: "+throwable.getMessage()).queue();
+            if(throwable.severity == Severity.COMMON)
+                m.editMessage(event.getClient().getError() + " Error loading: " + throwable.getMessage()).queue();
             else
-                m.editMessage(event.getClient().getError()+" Error loading track.").queue();
+                m.editMessage(event.getClient().getError() + " Error loading track.").queue();
+        }
+    }
+
+    /** Slash-specific result handler using a StringSelectMenu for track selection. */
+    private class SlashResultHandler implements AudioLoadResultHandler
+    {
+        private final SlashCommandEvent event;
+        private final String query;
+
+        private SlashResultHandler(SlashCommandEvent event, String query)
+        {
+            this.event = event;
+            this.query = query;
+        }
+
+        @Override
+        public void trackLoaded(AudioTrack track)
+        {
+            if(bot.getConfig().isTooLong(track))
+            {
+                event.getHook().editOriginal(FormatUtil.filter(event.getClient().getWarning() + " This track (**" + track.getInfo().title + "**) is longer than the allowed maximum: `"
+                        + TimeUtil.formatTime(track.getDuration()) + "` > `" + bot.getConfig().getMaxTime() + "`")).queue();
+                return;
+            }
+            AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+            int pos = handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event))) + 1;
+            event.getHook().editOriginal(FormatUtil.filter(event.getClient().getSuccess() + " Added **" + track.getInfo().title
+                    + "** (`" + TimeUtil.formatTime(track.getDuration()) + "`) " + (pos == 0 ? "to begin playing" : " to the queue at position " + pos))).queue();
+        }
+
+        @Override
+        public void playlistLoaded(AudioPlaylist playlist)
+        {
+            if(playlist.isSearchResult() && !playlist.getTracks().isEmpty())
+            {
+                // Build a select menu with up to 5 results
+                List<SelectOption> options = new ArrayList<>();
+                int count = Math.min(5, playlist.getTracks().size());
+                for(int i = 0; i < count; i++)
+                {
+                    AudioTrack track = playlist.getTracks().get(i);
+                    String label = track.getInfo().title.length() > 100 ? track.getInfo().title.substring(0, 97) + "..." : track.getInfo().title;
+                    String description = "`" + TimeUtil.formatTime(track.getDuration()) + "` — " + track.getInfo().author;
+                    if(description.length() > 100) description = description.substring(0, 97) + "...";
+                    options.add(SelectOption.of(label, String.valueOf(i)).withDescription(description));
+                }
+                StringSelectMenu menu = StringSelectMenu.create("search:" + event.getUser().getId())
+                        .setPlaceholder("Choose a track to add to the queue")
+                        .addOptions(options)
+                        .build();
+                event.getHook().editOriginal(event.getClient().getSuccess() + " Search results for `" + query + "`:")
+                        .setComponents(ActionRow.of(menu))
+                        .queue(m -> bot.getWaiter().waitForEvent(
+                            StringSelectInteractionEvent.class,
+                            e -> e.getComponentId().equals("search:" + event.getUser().getId()) && e.getUser().equals(event.getUser()),
+                            e ->
+                            {
+                                int index = Integer.parseInt(e.getValues().get(0));
+                                AudioTrack selected = playlist.getTracks().get(index);
+                                if(bot.getConfig().isTooLong(selected))
+                                {
+                                    e.editMessage(event.getClient().getWarning() + " This track (**" + selected.getInfo().title + "**) is longer than the allowed maximum: `"
+                                            + TimeUtil.formatTime(selected.getDuration()) + "` > `" + bot.getConfig().getMaxTime() + "`").setComponents().queue();
+                                    return;
+                                }
+                                AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
+                                int pos = handler.addTrack(new QueuedTrack(selected, RequestMetadata.fromResultHandler(selected, event))) + 1;
+                                e.editMessage(FormatUtil.filter(event.getClient().getSuccess() + " Added **" + FormatUtil.filter(selected.getInfo().title)
+                                        + "** (`" + TimeUtil.formatTime(selected.getDuration()) + "`) " + (pos == 0 ? "to begin playing" : " to the queue at position " + pos))).setComponents().queue();
+                            },
+                            1, TimeUnit.MINUTES,
+                            () -> m.editMessageComponents().queue()
+                        ));
+            }
+            else
+            {
+                event.getHook().editOriginal(event.getClient().getWarning() + " No results found for `" + query + "`.").queue();
+            }
+        }
+
+        @Override
+        public void noMatches()
+        {
+            event.getHook().editOriginal(event.getClient().getWarning() + " No results found for `" + query + "`.").queue();
+        }
+
+        @Override
+        public void loadFailed(FriendlyException throwable)
+        {
+            if(throwable.severity == Severity.COMMON)
+                event.getHook().editOriginal(event.getClient().getError() + " Error loading: " + throwable.getMessage()).queue();
+            else
+                event.getHook().editOriginal(event.getClient().getError() + " Error loading track.").queue();
         }
     }
 }

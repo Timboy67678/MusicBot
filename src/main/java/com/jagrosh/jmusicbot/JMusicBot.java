@@ -17,6 +17,7 @@ package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jdautilities.command.CommandClient;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
+import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.jagrosh.jdautilities.examples.command.*;
 import com.jagrosh.jmusicbot.commands.admin.*;
@@ -92,6 +93,7 @@ public class JMusicBot
         SettingsManager settings = new SettingsManager();
         Bot bot = new Bot(waiter, config, settings);
         CommandClient client = createCommandClient(config, settings, bot);
+        bot.setClient(client);
         
         
         if(!prompt.isNoGUI())
@@ -177,6 +179,7 @@ public class JMusicBot
                 .setPrefix(config.getPrefix())
                 .setAlternativePrefix(config.getAltPrefix())
                 .setOwnerId(Long.toString(config.getOwnerId()))
+                .setManualUpsert(true)
                 .setEmojis(config.getSuccess(), config.getWarning(), config.getError())
                 .setHelpWord(config.getHelp())
                 .setLinkedCacheSize(200)
@@ -222,11 +225,55 @@ public class JMusicBot
                         new SetnameCmd(bot),
                         new SetstatusCmd(bot),
                         new ShutdownCmd(bot)
+                )
+                .addSlashCommands(
+                        // music commands
+                        new LyricsCmd(bot),
+                        new NowplayingCmd(bot),
+                        new PlayCmd(bot),
+                        new PlaylistsCmd(bot),
+                        new QueueCmd(bot),
+                        new RemoveCmd(bot),
+                        new SearchCmd(bot),
+                        new SCSearchCmd(bot),
+                        new SeekCmd(bot),
+                        new ShuffleCmd(bot),
+                        new SkipCmd(bot),
+                        // DJ commands
+                        new ForceRemoveCmd(bot),
+                        new ForceskipCmd(bot),
+                        new MoveTrackCmd(bot),
+                        new PauseCmd(bot),
+                        new PlaynextCmd(bot),
+                        new RepeatCmd(bot),
+                        new SkiptoCmd(bot),
+                        new StopCmd(bot),
+                        new VolumeCmd(bot),
+                        // admin commands
+                        new PrefixCmd(bot),
+                        new QueueTypeCmd(bot),
+                        new SetdjCmd(bot),
+                        new SkipratioCmd(bot),
+                        new SettcCmd(bot),
+                        new SetvcCmd(bot),
+                        // general commands
+                        new SettingsCmd(bot),
+                        // owner commands
+                        new AutoplaylistCmd(bot),
+                        new DebugCmd(bot),
+                        new SetavatarCmd(bot),
+                        new SetgameCmd(bot),
+                        new SetnameCmd(bot),
+                        new SetstatusCmd(bot),
+                        new ShutdownCmd(bot)
                 );
         
         // enable eval if applicable
         if(config.useEval())
+        {
             cb.addCommand(new EvalCmd(bot));
+            cb.addSlashCommand(new EvalCmd(bot));
+        }
         
         // set status if set in config
         if(config.getStatus() != OnlineStatus.UNKNOWN)
