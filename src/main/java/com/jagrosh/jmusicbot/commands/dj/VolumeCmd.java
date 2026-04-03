@@ -34,7 +34,7 @@ public class VolumeCmd extends DJCommand
         this.name = "volume";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.help = "sets or shows volume";
-        this.arguments = "[0-150]";
+        this.arguments = "[0-300]";
     }
 
     @Override
@@ -55,13 +55,14 @@ public class VolumeCmd extends DJCommand
             }catch(NumberFormatException e){
                 nvolume = -1;
             }
-            if(nvolume<0 || nvolume>150)
-                event.reply(event.getClient().getError()+" Volume must be a valid integer between 0 and 150!");
+            if (nvolume < 0 || nvolume > 300)
+                event.reply(event.getClient().getError() + " Volume must be a valid integer between 0 and 300!");
             else
             {
-                handler.getPlayer().setVolume(nvolume);
+                handler.getPlayer().setVolume(Math.min(nvolume, 100));
                 settings.setVolume(nvolume);
-                event.reply(FormatUtil.volumeIcon(nvolume)+" Volume changed from `"+volume+"` to `"+nvolume+"`");
+                bot.getPlayerManager().applyEqGain(nvolume);
+                event.reply(FormatUtil.volumeIcon(nvolume) + " Volume changed from `" + volume + "` to `" + nvolume + "`");
             }
         }
     }

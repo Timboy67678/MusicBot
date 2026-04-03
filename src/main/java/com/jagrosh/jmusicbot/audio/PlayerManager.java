@@ -18,6 +18,7 @@ package com.jagrosh.jmusicbot.audio;
 import com.dunctebot.sourcemanagers.DuncteBotSources;
 import com.jagrosh.jmusicbot.Bot;
 import com.sedmelluq.discord.lavaplayer.container.MediaContainerRegistry;
+import com.sedmelluq.discord.lavaplayer.filter.equalizer.EqualizerFactory;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
@@ -39,6 +40,7 @@ import net.dv8tion.jda.api.entities.Guild;
 public class PlayerManager extends DefaultAudioPlayerManager
 {
     private final Bot bot;
+    private final EqualizerFactory equalizerFactory = new EqualizerFactory();
     
     public PlayerManager(Bot bot)
     {
@@ -72,6 +74,20 @@ public class PlayerManager extends DefaultAudioPlayerManager
         return bot;
     }
     
+    public EqualizerFactory getEqualizerFactory()
+    {
+        return equalizerFactory;
+    }
+    
+    public void applyEqGain(int logicalVolume)
+    {
+        float gain = logicalVolume > 100
+            ? Math.min((logicalVolume - 100) / 200.0f * 0.25f, 0.25f)
+            : 0.0f;
+        for (int band = 0; band < 15; band++)
+            equalizerFactory.setGain(band, gain);
+    }
+    
     public boolean hasHandler(Guild guild)
     {
         return guild.getAudioManager().getSendingHandler()!=null;
@@ -83,7 +99,10 @@ public class PlayerManager extends DefaultAudioPlayerManager
         if(guild.getAudioManager().getSendingHandler()==null)
         {
             AudioPlayer player = createPlayer();
-            player.setVolume(bot.getSettingsManager().getSettings(guild).getVolume());
+            player.setFilterFactory(equalizerFactory);
+            int savedVolume = bot.getSettingsManager().getSettings(guild).getVolume();
+            player.setVolume(Math.min(savedVolume, 100));
+            applyEqGain(savedVolume);
             handler = new AudioHandler(this, guild, player);
             player.addListener(handler);
             guild.getAudioManager().setSendingHandler(handler);
