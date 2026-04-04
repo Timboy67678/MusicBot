@@ -13,10 +13,6 @@ RUN mvn package -DskipTests -q
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM eclipse-temurin:17-jre
 
-# libopus0  — LavaPlayer's native connector links against system libopus for
-#             audio encoding. Without it the connector fails to load and
-#             LavaPlayer falls back to a Java Opus path that uses different
-#             (lower-quality) resampling, causing audible bass distortion.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libopus0 \
  && rm -rf /var/lib/apt/lists/*
