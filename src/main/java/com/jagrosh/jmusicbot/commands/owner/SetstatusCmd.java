@@ -36,7 +36,6 @@ public class SetstatusCmd extends OwnerCommand
         this.help = "sets the status the bot displays";
         this.arguments = "<status>";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = false;
         this.options = Arrays.asList(
             new OptionData(OptionType.STRING, "status", "Bot online status", true)
                 .addChoice("Online", "online")

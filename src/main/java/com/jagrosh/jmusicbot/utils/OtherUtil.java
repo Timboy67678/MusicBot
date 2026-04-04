@@ -43,9 +43,11 @@ public class OtherUtil
     public final static String NEW_VERSION_AVAILABLE = "There is a new version of JMusicBot available!\n"
                     + "Current version: %s\n"
                     + "New Version: %s\n\n"
-                    + "Please visit https://github.com/jagrosh/MusicBot/releases/latest to get the latest release.";
+                    + "Please visit " + JMusicBot.PROJECT_URL + "/releases/latest to get the latest release.";
     private final static String WINDOWS_INVALID_PATH = "c:\\windows\\system32\\";
     
+    private final static String GITHUB_PROJECT_API_URL = "https://api.github.com/repos/" + JMusicBot.PROJECT_FORK_USERNAME + "/" + JMusicBot.PROJECT_FORK_REPO;
+
     /**
      * gets a Path from a String
      * also fixes the windows tendency to try to start in system32
@@ -177,10 +179,8 @@ public class OtherUtil
     
     public static String getCurrentVersion()
     {
-        if(JMusicBot.class.getPackage()!=null && JMusicBot.class.getPackage().getImplementationVersion()!=null)
-            return JMusicBot.class.getPackage().getImplementationVersion();
-        else
-            return "UNKNOWN";
+        //instead of building version with pom, use hardcoded for now to avoid issues with running from IDE
+        return JMusicBot.VERSION;
     }
     
     public static String getLatestVersion()
@@ -188,7 +188,7 @@ public class OtherUtil
         try
         {
             Response response = new OkHttpClient.Builder().build()
-                    .newCall(new Request.Builder().get().url("https://api.github.com/repos/jagrosh/MusicBot/releases/latest").build())
+                    .newCall(new Request.Builder().get().url(GITHUB_PROJECT_API_URL + "/releases/latest").build())
                     .execute();
             ResponseBody body = response.body();
             if(body != null)

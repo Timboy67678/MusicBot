@@ -56,7 +56,7 @@ public class SettingsCmd extends SlashCommand
         VoiceChannel vchan = s.getVoiceChannel(event.getGuild());
         Role role = s.getRole(event.getGuild());
         EmbedBuilder ebuilder = new EmbedBuilder()
-                .setColor(event.getSelfMember().getColor())
+                .setColor(event.getSelfMember().getColors().getPrimary())
                 .setDescription("Text Channel: " + (tchan == null ? "Any" : "**#" + tchan.getName() + "**")
                         + "\nVoice Channel: " + (vchan == null ? "Any" : vchan.getAsMention())
                         + "\nDJ Role: " + (role == null ? "None" : "**" + role.getName() + "**")
@@ -83,7 +83,7 @@ public class SettingsCmd extends SlashCommand
         VoiceChannel vchan = s.getVoiceChannel(event.getGuild());
         Role role = s.getRole(event.getGuild());
         EmbedBuilder ebuilder = new EmbedBuilder()
-                .setColor(event.getGuild().getSelfMember().getColor())
+                .setColor(event.getGuild().getSelfMember().getColors().getPrimary())
                 .setDescription("Text Channel: " + (tchan == null ? "Any" : "**#" + tchan.getName() + "**")
                         + "\nVoice Channel: " + (vchan == null ? "Any" : vchan.getAsMention())
                         + "\nDJ Role: " + (role == null ? "None" : "**" + role.getName() + "**")

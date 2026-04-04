@@ -1,0 +1,18 @@
+# Build artifacts – Maven will re-fetch/build inside the container
+target/
+
+# Local data files – should be mounted as a volume, not baked into the image
+data/
+config.txt
+serversettings.json
+Playlists/
+
+# IDE & OS noise
+.idea/
+*.iml
+.DS_Store
+*.swp
+
+# Git
+.git/
+.gitignore

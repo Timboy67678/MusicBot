@@ -27,25 +27,24 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 
 /**
- * 
- * 
  * @author John Grosh (jagrosh)
  */
 public class BotConfig
 {
+    private static final String CONTEXT = "Config";
+    private static final String START_TOKEN = "/// START OF JMUSICBOT CONFIG ///";
+    private static final String END_TOKEN = "/// END OF JMUSICBOT CONFIG ///";
+
     private final Prompt prompt;
-    private final static String CONTEXT = "Config";
-    private final static String START_TOKEN = "/// START OF JMUSICBOT CONFIG ///";
-    private final static String END_TOKEN = "/// END OF JMUSICBOT CONFIG ///";
     
     private Path path = null;
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
             successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji,
-            evalEngine;
-    private boolean stayInChannel, songInGame, npImages, updatealerts, useEval, dbots;
+            evalEngine, spotifyClientId, spotifyClientSecret;
+    private boolean stayInChannel, songInGame, npImages, updateAlerts, useEval;
     private long owner, maxSeconds, aloneTimeUntilStop;
     private int maxYTPlaylistPages;
-    private double skipratio;
+    private double skipRatio;
     private OnlineStatus status;
     private Activity game;
     private Config aliases, transforms;
@@ -68,7 +67,6 @@ public class BotConfig
             path = getConfigPath();
             
             // load in the config file, plus the default values
-            //Config config = ConfigFactory.parseFile(path.toFile()).withFallback(ConfigFactory.load());
             Config config = ConfigFactory.load();
             
             // set values
@@ -87,7 +85,7 @@ public class BotConfig
             stayInChannel = config.getBoolean("stayinchannel");
             songInGame = config.getBoolean("songinstatus");
             npImages = config.getBoolean("npimages");
-            updatealerts = config.getBoolean("updatealerts");
+            updateAlerts = config.getBoolean("updatealerts");
             logLevel = config.getString("loglevel");
             useEval = config.getBoolean("eval");
             evalEngine = config.getString("evalengine");
@@ -97,8 +95,9 @@ public class BotConfig
             playlistsFolder = config.getString("playlistsfolder");
             aliases = config.getConfig("aliases");
             transforms = config.getConfig("transforms");
-            skipratio = config.getDouble("skipratio");
-            dbots = owner == 113156185389092864L;
+            skipRatio = config.getDouble("skipratio");
+            spotifyClientId = config.hasPath("spotify-client-id") ? config.getString("spotify-client-id") : "";
+            spotifyClientSecret = config.hasPath("spotify-client-secret") ? config.getString("spotify-client-secret") : "";
             
             // we may need to write a new config file
             boolean write = false;
@@ -108,7 +107,7 @@ public class BotConfig
             {
                 token = prompt.prompt("Please provide a bot token."
                         + "\nInstructions for obtaining a token can be found here:"
-                        + "\nhttps://github.com/jagrosh/MusicBot/wiki/Getting-a-Bot-Token."
+                        + "\n" + JMusicBot.PROJECT_URL + "/wiki/Getting-a-Bot-Token."
                         + "\nBot Token: ");
                 if(token==null)
                 {
@@ -129,7 +128,7 @@ public class BotConfig
                     owner = Long.parseLong(prompt.prompt("Owner ID was missing, or the provided owner ID is not valid."
                         + "\nPlease provide the User ID of the bot's owner."
                         + "\nInstructions for obtaining your User ID can be found here:"
-                        + "\nhttps://github.com/jagrosh/MusicBot/wiki/Finding-Your-User-ID"
+                        + "\n" + JMusicBot.PROJECT_URL + "/wiki/Finding-Your-User-ID"
                         + "\nOwner User ID: "));
                 }
                 catch(NumberFormatException | NullPointerException ex)
@@ -240,7 +239,7 @@ public class BotConfig
     
     public double getSkipRatio()
     {
-        return skipratio;
+        return skipRatio;
     }
     
     public long getOwnerId()
@@ -307,15 +306,10 @@ public class BotConfig
     {
         return playlistsFolder;
     }
-    
-    public boolean getDBots()
-    {
-        return dbots;
-    }
-    
+
     public boolean useUpdateAlerts()
     {
-        return updatealerts;
+        return updateAlerts;
     }
 
     public String getLogLevel()
@@ -380,5 +374,15 @@ public class BotConfig
     public Config getTransforms()
     {
         return transforms;
+    }
+
+    public String getSpotifyClientId()
+    {
+        return spotifyClientId;
+    }
+
+    public String getSpotifyClientSecret()
+    {
+        return spotifyClientSecret;
     }
 }

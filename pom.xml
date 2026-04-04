@@ -153,7 +153,49 @@
     </dependencies>
 
     <build>
+      <!-- finalName removes the version from the output jar so the filename
+           stays stable (JMusicBot-All.jar) regardless of <version>. -->
+      <finalName>${project.artifactId}</finalName>
       <plugins>
+        <!-- Configures the thin jar's manifest with Main-Class and Class-Path
+             pointing to libs/ — used by the Docker layered build. -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>3.4.2</version>
+            <configuration>
+                <archive>
+                    <manifest>
+                        <mainClass>com.jagrosh.jmusicbot.JMusicBot</mainClass>
+                        <addClasspath>true</addClasspath>
+                        <classpathPrefix>libs/</classpathPrefix>
+                    </manifest>
+                </archive>
+            </configuration>
+        </plugin>
+
+        <!-- Copies all runtime dependencies to target/libs/ during package phase.
+             Docker copies this directory as its own layer so it is only
+             re-uploaded when pom.xml (i.e. dependencies) actually change. -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.7.1</version>
+            <executions>
+                <execution>
+                    <id>copy-dependencies</id>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>copy-dependencies</goal>
+                    </goals>
+                    <configuration>
+                        <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                        <includeScope>runtime</includeScope>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>

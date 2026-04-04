@@ -42,7 +42,6 @@ public class EvalCmd extends OwnerCommand
         this.help = "evaluates nashorn code";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.engine = bot.getConfig().getEvalEngine();
-        this.guildOnly = false;
         this.options = Arrays.asList(new OptionData(OptionType.STRING, "code", "Code to evaluate", true));
     }
     

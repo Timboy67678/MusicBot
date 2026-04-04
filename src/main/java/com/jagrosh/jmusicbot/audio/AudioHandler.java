@@ -227,7 +227,7 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
             MessageCreateBuilder mb = new MessageCreateBuilder();
             mb.setContent(FormatUtil.filter(manager.getBot().getConfig().getSuccess()+" **Now Playing in "+guild.getSelfMember().getVoiceState().getChannel().getAsMention()+"...**"));
             EmbedBuilder eb = new EmbedBuilder();
-            eb.setColor(guild.getSelfMember().getColor());
+            eb.setColor(guild.getSelfMember().getColors().getPrimary());
             RequestMetadata rm = getRequestMetadata();
             if(rm.getOwner() != 0L)
             {
@@ -274,7 +274,7 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
                 .setEmbeds(new EmbedBuilder()
                 .setTitle("No music playing")
                 .setDescription(STOP_EMOJI+" "+FormatUtil.progressBar(-1)+" "+FormatUtil.volumeIcon(audioPlayer.getVolume()))
-                .setColor(guild.getSelfMember().getColor())
+                .setColor(guild.getSelfMember().getColors().getPrimary())
                 .build()).build();
     }
 
@@ -282,28 +282,6 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
     {
         return audioPlayer.isPaused() ? PAUSE_EMOJI : PLAY_EMOJI;
     }
-    
-    // Audio Send Handler methods
-    /*@Override
-    public boolean canProvide() 
-    {
-        if (lastFrame == null)
-            lastFrame = audioPlayer.provide();
-
-        return lastFrame != null;
-    }
-
-    @Override
-    public byte[] provide20MsAudio() 
-    {
-        if (lastFrame == null) 
-            lastFrame = audioPlayer.provide();
-
-        byte[] data = lastFrame != null ? lastFrame.getData() : null;
-        lastFrame = null;
-
-        return data;
-    }*/
     
     @Override
     public boolean canProvide() 

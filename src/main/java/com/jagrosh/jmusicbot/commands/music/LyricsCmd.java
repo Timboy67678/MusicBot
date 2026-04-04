@@ -74,7 +74,7 @@ public class LyricsCmd extends MusicCommand
 
             EmbedBuilder eb = new EmbedBuilder()
                     .setAuthor(lyrics.getAuthor())
-                    .setColor(event.getSelfMember().getColor())
+                    .setColor(event.getSelfMember().getColors().getPrimary())
                     .setTitle(lyrics.getTitle(), lyrics.getURL());
             if(lyrics.getContent().length()>15000)
             {
@@ -134,7 +134,7 @@ public class LyricsCmd extends MusicCommand
             }
             EmbedBuilder eb = new EmbedBuilder()
                     .setAuthor(lyrics.getAuthor())
-                    .setColor(event.getMember().getColor())
+                    .setColor(event.getMember().getColors().getPrimary())
                     .setTitle(lyrics.getTitle(), lyrics.getURL());
             if(lyrics.getContent().length() > 15000)
             {

@@ -127,7 +127,7 @@ public class SearchCmd extends MusicCommand
         @Override
         public void playlistLoaded(AudioPlaylist playlist)
         {
-            builder.setColor(event.getSelfMember().getColor())
+            builder.setColor(event.getSelfMember().getColors().getPrimary())
                     .setText(FormatUtil.filter(event.getClient().getSuccess()+" Search results for `"+event.getArgs()+"`:"))
                     .setChoices(new String[0])
                     .setSelection((msg,i) -> 

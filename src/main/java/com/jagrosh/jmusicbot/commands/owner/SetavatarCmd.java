@@ -39,7 +39,6 @@ public class SetavatarCmd extends OwnerCommand
         this.help = "sets the avatar of the bot";
         this.arguments = "<url>";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = false;
         this.options = Arrays.asList(new OptionData(OptionType.STRING, "url", "Image URL for new avatar", false));
     }
     

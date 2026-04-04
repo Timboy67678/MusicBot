@@ -1,0 +1,20 @@
+services:
+  jmusicbot:
+    build: .
+    image: jmusicbot:latest
+    container_name: jmusicbot
+    restart: unless-stopped
+
+    # All runtime data lives in ./data on the host:
+    #   ./data/config.txt          ← required, bot token / owner / settings
+    #   ./data/serversettings.json ← created automatically on first run
+    #   ./data/Playlists/          ← created automatically on first run
+    volumes:
+      - ./data:/app/data
+
+    # Optional: forward logs to the host's syslog / journald
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

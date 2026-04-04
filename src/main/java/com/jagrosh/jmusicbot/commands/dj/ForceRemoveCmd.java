@@ -88,7 +88,7 @@ public class ForceRemoveCmd extends DJCommand
             builder
             .setSelection((msg, i) -> removeAllEntries(found.get(i-1).getUser(), event))
             .setText("Found multiple users:")
-            .setColor(event.getSelfMember().getColor())
+            .setColor(event.getSelfMember().getColors().getPrimary())
             .useNumbers()
             .setUsers(event.getAuthor())
             .useCancelButton(true)

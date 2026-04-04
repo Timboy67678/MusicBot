@@ -34,7 +34,6 @@ public class PlaylistCmd extends OwnerCommand
     public PlaylistCmd(Bot bot)
     {
         this.bot = bot;
-        this.guildOnly = false;
         this.name = "playlist";
         this.arguments = "<append|delete|make|setdefault>";
         this.help = "playlist management";
@@ -73,7 +72,6 @@ public class PlaylistCmd extends OwnerCommand
             this.aliases = new String[]{"create"};
             this.help = "makes a new playlist";
             this.arguments = "<name>";
-            this.guildOnly = false;
         }
 
         @Override
@@ -116,7 +114,6 @@ public class PlaylistCmd extends OwnerCommand
             this.aliases = new String[]{"remove"};
             this.help = "deletes an existing playlist";
             this.arguments = "<name>";
-            this.guildOnly = false;
         }
 
         @Override
@@ -154,7 +151,6 @@ public class PlaylistCmd extends OwnerCommand
             this.aliases = new String[]{"add"};
             this.help = "appends songs to an existing playlist";
             this.arguments = "<name> <URL> | <URL> | ...";
-            this.guildOnly = false;
         }
 
         @Override

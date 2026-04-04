@@ -22,6 +22,7 @@ import com.jagrosh.jmusicbot.audio.AloneInVoiceHandler;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.NowplayingHandler;
 import com.jagrosh.jmusicbot.audio.PlayerManager;
+import com.jagrosh.jmusicbot.audio.SpotifyHandler;
 import com.jagrosh.jmusicbot.gui.GUI;
 import com.jagrosh.jmusicbot.playlist.PlaylistLoader;
 import com.jagrosh.jmusicbot.settings.SettingsManager;
@@ -36,8 +37,7 @@ import net.dv8tion.jda.api.entities.Guild;
  *
  * @author John Grosh <john.a.grosh@gmail.com>
  */
-public class Bot
-{
+public class Bot {
     private final EventWaiter waiter;
     private final ScheduledExecutorService threadpool;
     private final BotConfig config;
@@ -46,14 +46,14 @@ public class Bot
     private final PlaylistLoader playlists;
     private final NowplayingHandler nowplaying;
     private final AloneInVoiceHandler aloneInVoiceHandler;
-    
+    private final SpotifyHandler spotify;
+
     private boolean shuttingDown = false;
     private JDA jda;
     private CommandClient client;
     private GUI gui;
-    
-    public Bot(EventWaiter waiter, BotConfig config, SettingsManager settings)
-    {
+
+    public Bot(EventWaiter waiter, BotConfig config, SettingsManager settings) {
         this.waiter = waiter;
         this.config = config;
         this.settings = settings;
@@ -65,112 +65,108 @@ public class Bot
         this.nowplaying.init();
         this.aloneInVoiceHandler = new AloneInVoiceHandler(this);
         this.aloneInVoiceHandler.init();
+        String spotifyId = config.getSpotifyClientId();
+        String spotifySecret = config.getSpotifyClientSecret();
+        this.spotify = (spotifyId != null && !spotifyId.isBlank()
+                && spotifySecret != null && !spotifySecret.isBlank())
+                        ? new SpotifyHandler(spotifyId, spotifySecret)
+                        : null;
     }
-    
-    public BotConfig getConfig()
-    {
+
+    public BotConfig getConfig() {
         return config;
     }
-    
-    public SettingsManager getSettingsManager()
-    {
+
+    public SettingsManager getSettingsManager() {
         return settings;
     }
-    
-    public EventWaiter getWaiter()
-    {
+
+    public EventWaiter getWaiter() {
         return waiter;
     }
-    
-    public ScheduledExecutorService getThreadpool()
-    {
+
+    public ScheduledExecutorService getThreadpool() {
         return threadpool;
     }
-    
-    public PlayerManager getPlayerManager()
-    {
+
+    public PlayerManager getPlayerManager() {
         return players;
     }
-    
-    public PlaylistLoader getPlaylistLoader()
-    {
+
+    public PlaylistLoader getPlaylistLoader() {
         return playlists;
     }
-    
-    public NowplayingHandler getNowplayingHandler()
-    {
+
+    public NowplayingHandler getNowplayingHandler() {
         return nowplaying;
     }
 
-    public AloneInVoiceHandler getAloneInVoiceHandler()
-    {
+    public AloneInVoiceHandler getAloneInVoiceHandler() {
         return aloneInVoiceHandler;
     }
-    
-    public JDA getJDA()
-    {
+
+    /**
+     * Returns the Spotify handler, or {@code null} if Spotify credentials are not
+     * configured.
+     */
+    public SpotifyHandler getSpotifyHandler() {
+        return spotify;
+    }
+
+    public JDA getJDA() {
         return jda;
     }
-    
-    public void closeAudioConnection(long guildId)
-    {
+
+    public void closeAudioConnection(long guildId) {
         Guild guild = jda.getGuildById(guildId);
-        if(guild!=null)
+        if (guild != null)
             threadpool.submit(() -> guild.getAudioManager().closeAudioConnection());
     }
-    
-    public void resetGame()
-    {
-        Activity game = config.getGame()==null || config.getGame().getName().equalsIgnoreCase("none") ? null : config.getGame();
-        if(!Objects.equals(jda.getPresence().getActivity(), game))
+
+    public void resetGame() {
+        Activity game = config.getGame() == null || config.getGame().getName().equalsIgnoreCase("none") ? null
+                : config.getGame();
+        if (!Objects.equals(jda.getPresence().getActivity(), game))
             jda.getPresence().setActivity(game);
         OnlineStatus status = config.getStatus();
-        if(status != OnlineStatus.UNKNOWN && jda.getPresence().getStatus() != status)
+        if (status != OnlineStatus.UNKNOWN && jda.getPresence().getStatus() != status)
             jda.getPresence().setStatus(status);
     }
 
-    public void shutdown()
-    {
-        if(shuttingDown)
+    public void shutdown() {
+        if (shuttingDown)
             return;
         shuttingDown = true;
         threadpool.shutdownNow();
-        if(jda.getStatus()!=JDA.Status.SHUTTING_DOWN)
-        {
-            jda.getGuilds().stream().forEach(g -> 
-            {
+        if (jda.getStatus() != JDA.Status.SHUTTING_DOWN) {
+            jda.getGuilds().stream().forEach(g -> {
                 g.getAudioManager().closeAudioConnection();
-                AudioHandler ah = (AudioHandler)g.getAudioManager().getSendingHandler();
-                if(ah!=null)
-                {
+                AudioHandler ah = (AudioHandler) g.getAudioManager().getSendingHandler();
+                if (ah != null) {
                     ah.stopAndClear();
                     ah.getPlayer().destroy();
                 }
             });
             jda.shutdown();
         }
-        if(gui!=null)
+        if (gui != null)
             gui.dispose();
         System.exit(0);
     }
 
-    public void setJDA(JDA jda)
-    {
+    public void setJDA(JDA jda) {
         this.jda = jda;
     }
-    
-    public void setClient(CommandClient client)
-    {
+
+    public void setClient(CommandClient client) {
         this.client = client;
     }
-    
-    public CommandClient getClient()
-    {
+
+    public CommandClient getClient() {
         return client;
     }
-    
-    public void setGUI(GUI gui)
-    {
+
+    public void setGUI(GUI gui) {
         this.gui = gui;
     }
 }

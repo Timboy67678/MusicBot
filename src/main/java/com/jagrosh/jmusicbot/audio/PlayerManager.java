@@ -20,6 +20,7 @@ import com.jagrosh.jmusicbot.Bot;
 import com.sedmelluq.discord.lavaplayer.container.MediaContainerRegistry;
 import com.sedmelluq.discord.lavaplayer.filter.equalizer.EqualizerFactory;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
@@ -41,27 +42,32 @@ import net.dv8tion.jda.api.entities.Guild;
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public class PlayerManager extends DefaultAudioPlayerManager
-{
+public class PlayerManager extends DefaultAudioPlayerManager {
     private final Bot bot;
     private final EqualizerFactory equalizerFactory = new EqualizerFactory();
-    
-    public PlayerManager(Bot bot)
-    {
+
+    public PlayerManager(Bot bot) {
         this.bot = bot;
     }
-    
-    public void init()
-    {
-        TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms()).forEach(t -> registerSourceManager(t));
+
+    public void init() {
+        // Use the highest available resampling and Opus encoding quality.
+        // This is critical in containerised environments where the native
+        // connector may not load and LavaPlayer falls back to a Java-based
+        // audio pipeline; without these settings that path uses LOW quality
+        // resampling which causes audible bass distortion.
+        getConfiguration().setResamplingQuality(AudioConfiguration.ResamplingQuality.HIGH);
+        getConfiguration().setOpusEncodingQuality(10);
+
+        TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms())
+                .forEach(t -> registerSourceManager(t));
 
         YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(
-            true,
-            new Music(),
-            new TvHtml5Simply(),
-            new AndroidVr(),
-            new Web()
-        );
+                true,
+                new Music(),
+                new TvHtml5Simply(),
+                new AndroidVr(),
+                new Web());
         yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
         registerSourceManager(yt);
 
@@ -78,36 +84,30 @@ public class PlayerManager extends DefaultAudioPlayerManager
 
         DuncteBotSources.registerAll(this, "en-US");
     }
-    
-    public Bot getBot()
-    {
+
+    public Bot getBot() {
         return bot;
     }
-    
-    public EqualizerFactory getEqualizerFactory()
-    {
+
+    public EqualizerFactory getEqualizerFactory() {
         return equalizerFactory;
     }
-    
-    public void applyEqGain(int logicalVolume)
-    {
+
+    public void applyEqGain(int logicalVolume) {
         float gain = logicalVolume > 100
-            ? Math.min((logicalVolume - 100) / 200.0f * 0.25f, 0.25f)
-            : 0.0f;
+                ? Math.min((logicalVolume - 100) / 200.0f * 0.25f, 0.25f)
+                : 0.0f;
         for (int band = 0; band < 15; band++)
             equalizerFactory.setGain(band, gain);
     }
-    
-    public boolean hasHandler(Guild guild)
-    {
-        return guild.getAudioManager().getSendingHandler()!=null;
+
+    public boolean hasHandler(Guild guild) {
+        return guild.getAudioManager().getSendingHandler() != null;
     }
-    
-    public AudioHandler setUpHandler(Guild guild)
-    {
+
+    public AudioHandler setUpHandler(Guild guild) {
         AudioHandler handler;
-        if(guild.getAudioManager().getSendingHandler()==null)
-        {
+        if (guild.getAudioManager().getSendingHandler() == null) {
             AudioPlayer player = createPlayer();
             player.setFilterFactory(equalizerFactory);
             int savedVolume = bot.getSettingsManager().getSettings(guild).getVolume();
@@ -116,8 +116,7 @@ public class PlayerManager extends DefaultAudioPlayerManager
             handler = new AudioHandler(this, guild, player);
             player.addListener(handler);
             guild.getAudioManager().setSendingHandler(handler);
-        }
-        else
+        } else
             handler = (AudioHandler) guild.getAudioManager().getSendingHandler();
         return handler;
     }

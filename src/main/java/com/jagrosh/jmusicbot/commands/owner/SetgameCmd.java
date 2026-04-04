@@ -36,7 +36,6 @@ public class SetgameCmd extends OwnerCommand
         this.help = "sets the bot activity";
         this.arguments = "[playing|listening|watching|streaming|clear] [title]";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.guildOnly = false;
         this.options = Arrays.asList(
             new OptionData(OptionType.STRING, "type", "Activity type", false)
                 .addChoice("Playing", "playing")

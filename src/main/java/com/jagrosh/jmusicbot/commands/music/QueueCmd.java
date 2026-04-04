@@ -110,7 +110,7 @@ public class QueueCmd extends MusicCommand
         builder.setText((i1,i2) -> getQueueTitle(ah, event.getClient().getSuccess(), songs.length, fintotal, settings.getRepeatMode(), settings.getQueueType()))
                 .setItems(songs)
                 .setUsers(event.getAuthor())
-                .setColor(event.getSelfMember().getColor())
+                .setColor(event.getSelfMember().getColors().getPrimary())
                 ;
         builder.build().paginate(event.getChannel(), pagenum);
     }
