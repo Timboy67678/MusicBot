@@ -47,7 +47,7 @@ public class VolumeCmd extends DJCommand
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         Settings settings = event.getClient().getSettingsFor(event.getGuild());
-        int volume = handler.getPlayer().getVolume();
+        int volume = settings.getVolume();
         if(event.getArgs().isEmpty())
         {
             event.reply(FormatUtil.volumeIcon(volume)+" Current volume is `"+volume+"`");
@@ -77,7 +77,7 @@ public class VolumeCmd extends DJCommand
     {
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         Settings settings = event.getClient().getSettingsFor(event.getGuild());
-        int volume = handler.getPlayer().getVolume();
+        int volume = settings.getVolume();
         if(!event.hasOption("volume"))
         {
             event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue();
