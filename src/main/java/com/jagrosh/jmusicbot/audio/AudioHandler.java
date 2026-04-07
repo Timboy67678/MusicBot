@@ -271,11 +271,13 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
                 eb.setTitle(track.getInfo().title);
             }
 
-            if(manager.getBot().getConfig().useNPImages())
+            String artworkUrl = track.getInfo().artworkUrl;
+            if(artworkUrl != null && !artworkUrl.isBlank())
             {
-                String artworkUrl = track.getInfo().artworkUrl;
-                if(artworkUrl != null && !artworkUrl.isBlank())
-                    eb.setImage(artworkUrl);
+                if(manager.getBot().getConfig().useNPImages())
+                    eb.setImage(artworkUrl);   // large full-width, no auto-refresh
+                else
+                    eb.setThumbnail(artworkUrl); // small corner, compatible with 5-sec refresh
             }
             
             if(track.getInfo().author != null && !track.getInfo().author.isEmpty())
