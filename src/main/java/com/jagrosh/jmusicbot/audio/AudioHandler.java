@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Set;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack;
 import java.nio.ByteBuffer;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -272,9 +271,11 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
                 eb.setTitle(track.getInfo().title);
             }
 
-            if(track instanceof YoutubeAudioTrack && manager.getBot().getConfig().useNPImages())
+            if(manager.getBot().getConfig().useNPImages())
             {
-                eb.setThumbnail("https://img.youtube.com/vi/"+track.getIdentifier()+"/mqdefault.jpg");
+                String artworkUrl = track.getInfo().artworkUrl;
+                if(artworkUrl != null && !artworkUrl.isBlank())
+                    eb.setImage(artworkUrl);
             }
             
             if(track.getInfo().author != null && !track.getInfo().author.isEmpty())
