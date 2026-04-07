@@ -38,7 +38,7 @@ public class SkiptoCmd extends DJCommand
         this.arguments = "<position>";
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
-        this.options = Arrays.asList(new OptionData(OptionType.INTEGER, "position", "Queue position to skip to", true).setMinValue(1));
+        this.options = Arrays.asList(new OptionData(OptionType.INTEGER, "position", "Queue position to skip to", true).setMinValue(1).setAutoComplete(true));
     }
 
     @Override

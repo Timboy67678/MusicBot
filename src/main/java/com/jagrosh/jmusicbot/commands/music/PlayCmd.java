@@ -73,7 +73,8 @@ public class PlayCmd extends MusicCommand {
         this.bePlaying = false;
         this.options = Arrays.asList(
                 new OptionData(OptionType.STRING, "query",
-                        "Song title, URL, or 'playlist:<name>' to load a saved playlist", false));
+                        "Song title, URL, or 'playlist:<name>' to load a saved playlist", false)
+                        .setAutoComplete(true));
     }
 
     @Override

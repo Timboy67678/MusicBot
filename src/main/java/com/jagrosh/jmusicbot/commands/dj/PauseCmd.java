@@ -59,6 +59,6 @@ public class PauseCmd extends DJCommand
             return;
         }
         handler.getPlayer().setPaused(true);
-        event.reply(event.getClient().getSuccess() + " Paused **" + handler.getPlayer().getPlayingTrack().getInfo().title + "**. Use `/play` to unpause!").queue();
+        event.reply(event.getClient().getSuccess() + " Paused **" + handler.getPlayer().getPlayingTrack().getInfo().title + "**. Use `/play` to unpause!").setEphemeral(true).queue();
     }
 }

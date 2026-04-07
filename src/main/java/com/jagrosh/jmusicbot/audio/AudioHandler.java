@@ -39,6 +39,8 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.slf4j.LoggerFactory;
@@ -218,6 +220,29 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
 
     
     // Formatting
+    /**
+     * Builds the interactive control button row for the player panel.
+     * Uses the guild ID in each button's custom ID so the Listener can route
+     * interactions back to the correct guild without storing per-message state.
+     */
+    public static ActionRow buildPlayerControls(long guildId, boolean isPaused, RepeatMode repeatMode)
+    {
+        String gid = String.valueOf(guildId);
+        String repeatEmoji = repeatMode == RepeatMode.SINGLE ? "\uD83D\uDD02" : "\uD83D\uDD01"; // 🔂 / 🔁
+        String repeatLabel = repeatMode == RepeatMode.OFF ? "Repeat: Off"
+                : repeatMode == RepeatMode.ALL ? "Repeat: All" : "Repeat: One";
+        Button pauseBtn = isPaused
+                ? Button.success("panel:pauseresume:" + gid, PLAY_EMOJI + " Resume")
+                : Button.secondary("panel:pauseresume:" + gid, PAUSE_EMOJI + " Pause");
+        return ActionRow.of(
+                pauseBtn,
+                Button.primary("panel:skip:" + gid, "\u23ED Skip"),        // ⏭
+                Button.danger("panel:stop:" + gid, STOP_EMOJI + " Stop"),
+                Button.secondary("panel:shuffle:" + gid, "\uD83D\uDD00 Shuffle"), // 🔀
+                Button.secondary("panel:repeat:" + gid, repeatEmoji + " " + repeatLabel)
+        );
+    }
+
     public MessageCreateData getNowPlaying(JDA jda)
     {
         if(isMusicPlaying(jda))
@@ -260,6 +285,9 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
                     + " "+FormatUtil.progressBar(progress)
                     + " `[" + TimeUtil.formatTime(track.getPosition()) + "/" + TimeUtil.formatTime(track.getDuration()) + "]` "
                     + FormatUtil.volumeIcon(audioPlayer.getVolume()));
+
+            RepeatMode repeatMode = manager.getBot().getSettingsManager().getSettings(guildId).getRepeatMode();
+            mb.addComponents(buildPlayerControls(guildId, audioPlayer.isPaused(), repeatMode));
             
             return mb.setEmbeds(eb.build()).build();
         }

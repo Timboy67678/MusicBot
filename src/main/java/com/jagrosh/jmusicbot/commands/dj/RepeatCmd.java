@@ -112,6 +112,6 @@ public class RepeatCmd extends DJCommand
             value = RepeatMode.SINGLE;
         }
         settings.setRepeatMode(value);
-        event.reply(event.getClient().getSuccess() + " Repeat mode is now `" + value.getUserFriendlyName() + "`").queue();
+        event.reply(event.getClient().getSuccess() + " Repeat mode is now `" + value.getUserFriendlyName() + "`").setEphemeral(true).queue();
     }
 }

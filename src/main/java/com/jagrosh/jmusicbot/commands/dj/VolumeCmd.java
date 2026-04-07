@@ -80,7 +80,7 @@ public class VolumeCmd extends DJCommand
         int volume = settings.getVolume();
         if(!event.hasOption("volume"))
         {
-            event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue();
+            event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").setEphemeral(true).queue();
         }
         else
         {
@@ -88,7 +88,7 @@ public class VolumeCmd extends DJCommand
             handler.getPlayer().setVolume(Math.min(nvolume, 100));
             settings.setVolume(nvolume);
             bot.getPlayerManager().applyEqGain(nvolume);
-            event.reply(FormatUtil.volumeIcon(nvolume) + " Volume changed from `" + volume + "` to `" + nvolume + "`").queue();
+            event.reply(FormatUtil.volumeIcon(nvolume) + " Volume changed from `" + volume + "` to `" + nvolume + "`").setEphemeral(true).queue();
         }
     }
 }

@@ -30,6 +30,7 @@ import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import com.jagrosh.jmusicbot.utils.TimeUtil;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
@@ -100,10 +101,16 @@ public class QueueCmd extends MusicCommand
         }
         String[] songs = new String[list.size()];
         long total = 0;
+        long waitMs = 0;
+        AudioTrack playing = ah.getPlayer().getPlayingTrack();
+        if (playing != null)
+            waitMs = playing.getDuration() - playing.getPosition();
         for(int i=0; i<list.size(); i++)
         {
-            total += list.get(i).getTrack().getDuration();
-            songs[i] = list.get(i).toString();
+            long thisWait = waitMs;
+            total    += list.get(i).getTrack().getDuration();
+            waitMs   += list.get(i).getTrack().getDuration();
+            songs[i]  = list.get(i).toString() + " `\u25B6 in " + TimeUtil.formatTime(thisWait) + "`";
         }
         Settings settings = event.getClient().getSettingsFor(event.getGuild());
         long fintotal = total;
@@ -159,7 +166,7 @@ public class QueueCmd extends MusicCommand
     private void sendQueuePage(SlashCommandEvent event, AudioHandler ah, List<QueuedTrack> list,
                                 Settings settings, int page, User user, Guild guild)
     {
-        String[] songs = buildSongArray(list);
+        String[] songs = buildSongArray(list, ah);
         long total = list.stream().mapToLong(qt -> qt.getTrack().getDuration()).sum();
         int totalPages = (int) Math.ceil(songs.length / 10.0);
         page = Math.max(1, Math.min(page, totalPages));
@@ -193,7 +200,7 @@ public class QueueCmd extends MusicCommand
             {
                 AudioHandler freshAh = (AudioHandler) guild.getAudioManager().getSendingHandler();
                 List<QueuedTrack> freshList = freshAh.getQueue().getList();
-                String[] freshSongs = buildSongArray(freshList);
+                String[] freshSongs = buildSongArray(freshList, freshAh);
                 long freshTotal = freshList.stream().mapToLong(qt -> qt.getTrack().getDuration()).sum();
                 int freshTotalPages = freshSongs.length == 0 ? 1 : (int) Math.ceil(freshSongs.length / 10.0);
 
@@ -217,11 +224,19 @@ public class QueueCmd extends MusicCommand
         );
     }
 
-    private static String[] buildSongArray(List<QueuedTrack> list)
+    private static String[] buildSongArray(List<QueuedTrack> list, AudioHandler ah)
     {
         String[] songs = new String[list.size()];
-        for(int i = 0; i < list.size(); i++)
-            songs[i] = list.get(i).toString();
+        long waitMs = 0;
+        AudioTrack playing = ah.getPlayer().getPlayingTrack();
+        if (playing != null)
+            waitMs = playing.getDuration() - playing.getPosition();
+        for (int i = 0; i < list.size(); i++)
+        {
+            long thisWait = waitMs;
+            waitMs += list.get(i).getTrack().getDuration();
+            songs[i] = list.get(i).toString() + " `\u25B6 in " + TimeUtil.formatTime(thisWait) + "`";
+        }
         return songs;
     }
 

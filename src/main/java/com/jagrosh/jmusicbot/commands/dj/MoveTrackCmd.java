@@ -27,8 +27,8 @@ public class MoveTrackCmd extends DJCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.bePlaying = true;
         this.options = Arrays.asList(
-            new OptionData(OptionType.INTEGER, "from", "Position to move from", true).setMinValue(1),
-            new OptionData(OptionType.INTEGER, "to", "Position to move to", true).setMinValue(1)
+            new OptionData(OptionType.INTEGER, "from", "Position to move from", true).setMinValue(1).setAutoComplete(true),
+            new OptionData(OptionType.INTEGER, "to", "Position to move to", true).setMinValue(1).setAutoComplete(true)
         );
     }
 

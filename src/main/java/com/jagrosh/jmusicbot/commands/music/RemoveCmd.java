@@ -44,7 +44,7 @@ public class RemoveCmd extends MusicCommand
         this.aliases = bot.getConfig().getAliases(this.name);
         this.beListening = true;
         this.bePlaying = true;
-        this.options = Arrays.asList(new OptionData(OptionType.STRING, "position", "Queue position to remove, or ALL to remove all your songs", true));
+        this.options = Arrays.asList(new OptionData(OptionType.STRING, "position", "Queue position to remove, or ALL to remove all your songs", true).setAutoComplete(true));
     }
 
     @Override

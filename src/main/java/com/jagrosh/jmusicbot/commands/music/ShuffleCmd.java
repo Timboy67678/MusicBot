@@ -70,7 +70,7 @@ public class ShuffleCmd extends MusicCommand
                 event.reply(event.getClient().getWarning() + " You only have one song in the queue!").queue();
                 break;
             default:
-                event.reply(event.getClient().getSuccess() + " You successfully shuffled your " + s + " entries.").queue();
+                event.reply(event.getClient().getSuccess() + " You successfully shuffled your " + s + " entries.").setEphemeral(true).queue();
                 break;
         }
     }
