@@ -133,6 +133,13 @@ public class JMusicBot {
                     .build();
             bot.setJDA(jda);
 
+            // Graceful shutdown: JVM receives SIGTERM (e.g. `docker stop`) and runs
+            // this hook before exiting, disconnecting audio and logging out of Discord.
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOG.info("Shutdown signal received, shutting down gracefully...");
+                bot.shutdown();
+            }, "shutdown-hook"));
+
             // check if something about the current startup is not supported
             String unsupportedReason = OtherUtil.getUnsupportedBotReason(jda);
             if (unsupportedReason != null) {

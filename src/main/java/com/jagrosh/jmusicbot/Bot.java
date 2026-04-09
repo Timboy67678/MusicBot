@@ -151,7 +151,6 @@ public class Bot {
         }
         if (gui != null)
             gui.dispose();
-        System.exit(0);
     }
 
     public void setJDA(JDA jda) {
