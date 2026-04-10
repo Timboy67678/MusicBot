@@ -90,15 +90,15 @@ public class SpotifyHandler {
     }
 
     /**
-     * Resolves a Spotify URL to a list of {@link SpotifyTrackInfo} objects
-     * (one element for a track, multiple for a playlist or album).
+     * Resolves a Spotify URL to a {@link SpotifyResult} containing the
+     * playlist/album name and an ordered list of tracks.
      *
      * @throws IOException if the Spotify API cannot be reached or returns an error
      */
-    public List<SpotifyTrackInfo> resolve(String url) throws IOException {
+    public SpotifyResult resolve(String url) throws IOException {
         Matcher m;
         if ((m = TRACK_URL.matcher(url)).find())
-            return Collections.singletonList(fetchTrack(m.group(1)));
+            return new SpotifyResult(null, Collections.singletonList(fetchTrack(m.group(1))));
         if ((m = PLAYLIST_URL.matcher(url)).find())
             return fetchPlaylistTracks(m.group(1));
         if ((m = ALBUM_URL.matcher(url)).find())
@@ -107,6 +107,20 @@ public class SpotifyHandler {
     }
 
     // ── Data model ────────────────────────────────────────────────────────────
+
+    /**
+     * Result of resolving a Spotify URL: the playlist/album name (null for a
+     * single track) and the ordered list of tracks.
+     */
+    public static class SpotifyResult {
+        public final String name;
+        public final List<SpotifyTrackInfo> tracks;
+
+        public SpotifyResult(String name, List<SpotifyTrackInfo> tracks) {
+            this.name = name;
+            this.tracks = tracks;
+        }
+    }
 
     /**
      * Simple value object carrying the track title and primary artist name
@@ -167,8 +181,13 @@ public class SpotifyHandler {
         return new SpotifyTrackInfo(name, artist);
     }
 
-    private List<SpotifyTrackInfo> fetchPlaylistTracks(String id) throws IOException {
+    private SpotifyResult fetchPlaylistTracks(String id) throws IOException {
         ensureToken();
+
+        // Fetch playlist name separately (lightweight request)
+        DataObject meta = apiGet("/playlists/" + id + "?fields=name");
+        String name = meta.getString("name");
+
         List<SpotifyTrackInfo> tracks = new ArrayList<>();
 
         // Use fields parameter to reduce payload size
@@ -201,14 +220,15 @@ public class SpotifyHandler {
                 break;
             page = apiGetFull(page.getString("next"));
         }
-        return tracks;
+        return new SpotifyResult(name, tracks);
     }
 
-    private List<SpotifyTrackInfo> fetchAlbumTracks(String id) throws IOException {
+    private SpotifyResult fetchAlbumTracks(String id) throws IOException {
         ensureToken();
 
-        // Fetch the full album to get the primary album artist
+        // Fetch the full album to get the name and primary album artist
         DataObject album = apiGet("/albums/" + id);
+        String albumName = album.getString("name");
         String albumArtist = album.getArray("artists").getObject(0).getString("name");
 
         List<SpotifyTrackInfo> tracks = new ArrayList<>();
@@ -230,7 +250,7 @@ public class SpotifyHandler {
                 break;
             page = apiGetFull(page.getString("next"));
         }
-        return tracks;
+        return new SpotifyResult(albumName, tracks);
     }
 
     // ── HTTP helpers ──────────────────────────────────────────────────────────

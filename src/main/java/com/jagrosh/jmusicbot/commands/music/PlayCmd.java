@@ -17,6 +17,7 @@ package com.jagrosh.jmusicbot.commands.music;
 
 import com.jagrosh.jmusicbot.audio.RequestMetadata;
 import com.jagrosh.jmusicbot.audio.SpotifyHandler;
+import com.jagrosh.jmusicbot.audio.SpotifyHandler.SpotifyResult;
 import com.jagrosh.jmusicbot.audio.SpotifyHandler.SpotifyTrackInfo;
 import com.jagrosh.jmusicbot.utils.TimeUtil;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -507,7 +509,8 @@ public class PlayCmd extends MusicCommand {
      */
     private void handleSpotifyPrefix(String url, Message m, CommandEvent event) {
         try {
-            List<SpotifyTrackInfo> tracks = bot.getSpotifyHandler().resolve(url);
+            SpotifyResult result = bot.getSpotifyHandler().resolve(url);
+            List<SpotifyTrackInfo> tracks = result.tracks;
             if (tracks.isEmpty()) {
                 m.editMessage(FormatUtil.filter(event.getClient().getWarning()
                         + " No tracks found for that Spotify link.")).queue();
@@ -519,15 +522,16 @@ public class PlayCmd extends MusicCommand {
                         "ytsearch:" + tracks.get(0).toSearchQuery(),
                         new ResultHandler(m, event, true));
             } else {
-                // Playlist / album — queue all tracks and report when done
-                m.editMessage(loadingEmoji + " Queuing **" + tracks.size()
-                        + "** tracks from Spotify...").queue();
-                AtomicInteger loaded = new AtomicInteger(0);
+                // Playlist / album — ordered concurrent loading
+                String displayName = result.name != null ? result.name : "Spotify playlist";
+                m.editMessage(loadingEmoji + " Loading **" + displayName + "**... ("
+                        + tracks.size() + " tracks)").queue();
+                AtomicReferenceArray<AudioTrack> orderedResults = new AtomicReferenceArray<>(tracks.size());
                 AtomicInteger done = new AtomicInteger(0);
-                for (SpotifyTrackInfo info : tracks) {
+                for (int i = 0; i < tracks.size(); i++) {
                     bot.getPlayerManager().loadItemOrdered(event.getGuild(),
-                            "ytsearch:" + info.toSearchQuery(),
-                            new SpotifyPrefixResultHandler(m, event, loaded, done, tracks.size()));
+                            "ytsearch:" + tracks.get(i).toSearchQuery(),
+                            new SpotifyPrefixResultHandler(m, event, orderedResults, i, done, tracks.size(), result.name));
                 }
             }
         } catch (Exception ex) {
@@ -543,7 +547,8 @@ public class PlayCmd extends MusicCommand {
      */
     private void handleSpotifySlash(String url, SlashCommandEvent event) {
         try {
-            List<SpotifyTrackInfo> tracks = bot.getSpotifyHandler().resolve(url);
+            SpotifyResult result = bot.getSpotifyHandler().resolve(url);
+            List<SpotifyTrackInfo> tracks = result.tracks;
             if (tracks.isEmpty()) {
                 event.getHook().editOriginal(FormatUtil.filter(event.getClient().getWarning()
                         + " No tracks found for that Spotify link.")).queue();
@@ -554,14 +559,15 @@ public class PlayCmd extends MusicCommand {
                         "ytsearch:" + tracks.get(0).toSearchQuery(),
                         new SlashResultHandler(event, tracks.get(0).toSearchQuery(), true));
             } else {
-                event.getHook().editOriginal(loadingEmoji + " Queuing **" + tracks.size()
-                        + "** tracks from Spotify...").queue();
-                AtomicInteger loaded = new AtomicInteger(0);
+                String displayName = result.name != null ? result.name : "Spotify playlist";
+                event.getHook().editOriginal(loadingEmoji + " Loading **" + displayName + "**... ("
+                        + tracks.size() + " tracks)").queue();
+                AtomicReferenceArray<AudioTrack> orderedResults = new AtomicReferenceArray<>(tracks.size());
                 AtomicInteger done = new AtomicInteger(0);
-                for (SpotifyTrackInfo info : tracks) {
+                for (int i = 0; i < tracks.size(); i++) {
                     bot.getPlayerManager().loadItemOrdered(event.getGuild(),
-                            "ytsearch:" + info.toSearchQuery(),
-                            new SpotifySlashResultHandler(event, loaded, done, tracks.size()));
+                            "ytsearch:" + tracks.get(i).toSearchQuery(),
+                            new SpotifySlashResultHandler(event, orderedResults, i, done, tracks.size(), result.name));
                 }
             }
         } catch (Exception ex) {
@@ -575,149 +581,163 @@ public class PlayCmd extends MusicCommand {
 
     /**
      * Handles each YouTube search result for a Spotify playlist (prefix commands).
+     * Stores resolved tracks by their original index so the queue order matches
+     * the Spotify playlist order; adds all tracks when every search has completed.
      */
     private class SpotifyPrefixResultHandler implements AudioLoadResultHandler {
         private final Message m;
         private final CommandEvent event;
-        private final AtomicInteger loaded;
+        private final AtomicReferenceArray<AudioTrack> orderedResults;
+        private final int index;
         private final AtomicInteger done;
         private final int total;
+        private final String playlistName;
 
         SpotifyPrefixResultHandler(Message m, CommandEvent event,
-                AtomicInteger loaded, AtomicInteger done, int total) {
+                AtomicReferenceArray<AudioTrack> orderedResults, int index,
+                AtomicInteger done, int total, String playlistName) {
             this.m = m;
             this.event = event;
-            this.loaded = loaded;
+            this.orderedResults = orderedResults;
+            this.index = index;
             this.done = done;
             this.total = total;
+            this.playlistName = playlistName;
         }
 
-        private void addBestResult(AudioPlaylist playlist) {
-            if (!playlist.isSearchResult() || playlist.getTracks().isEmpty()) {
-                finish(false);
+        private void setResult(AudioTrack track) {
+            if (track != null && !bot.getConfig().isTooLong(track))
+                orderedResults.set(index, track);
+        }
+
+        private void finish() {
+            if (done.incrementAndGet() != total)
                 return;
-            }
-            AudioTrack track = playlist.getTracks().get(0);
-            if (bot.getConfig().isTooLong(track)) {
-                finish(false);
-                return;
-            }
+            // All searches done — add tracks in playlist order
             AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
-            handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
-            finish(true);
-        }
-
-        private void finish(boolean success) {
-            if (success)
-                loaded.incrementAndGet();
-            int d = done.incrementAndGet();
-            if (d == total) {
-                int l = loaded.get();
-                String msg = event.getClient().getSuccess()
-                        + " Loaded **" + l + "** of **" + total + "** Spotify tracks!"
-                        + (l < total ? "\n" + event.getClient().getWarning()
-                                + " " + (total - l) + " track(s) could not be found on YouTube." : "");
+            int loaded = 0;
+            for (int i = 0; i < total; i++) {
+                AudioTrack track = orderedResults.get(i);
+                if (track != null) {
+                    handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
+                    loaded++;
+                }
+            }
+            int missed = total - loaded;
+            String name = playlistName != null ? "playlist **" + playlistName + "**" : "a Spotify playlist";
+            if (loaded == 0) {
+                m.editMessage(FormatUtil.filter(event.getClient().getWarning()
+                        + " Could not find any tracks from " + name + " on YouTube.")).queue();
+            } else {
+                String msg = event.getClient().getSuccess() + " Found " + name + " with `"
+                        + loaded + "` entries; added to the queue!"
+                        + (missed > 0 ? "\n" + event.getClient().getWarning() + " " + missed
+                                + " track(s) could not be found on YouTube." : "");
                 m.editMessage(FormatUtil.filter(msg)).queue();
             }
         }
 
         @Override
         public void trackLoaded(AudioTrack track) {
-            if (bot.getConfig().isTooLong(track)) {
-                finish(false);
-                return;
-            }
-            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
-            handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
-            finish(true);
+            setResult(track);
+            finish();
         }
 
         @Override
         public void playlistLoaded(AudioPlaylist playlist) {
-            addBestResult(playlist);
+            if (playlist.isSearchResult() && !playlist.getTracks().isEmpty())
+                setResult(playlist.getTracks().get(0));
+            finish();
         }
 
         @Override
         public void noMatches() {
-            finish(false);
+            finish();
         }
 
         @Override
         public void loadFailed(FriendlyException throwable) {
-            finish(false);
+            finish();
         }
     }
 
     /**
      * Handles each YouTube search result for a Spotify playlist (slash commands).
+     * Stores resolved tracks by their original index so the queue order matches
+     * the Spotify playlist order; adds all tracks when every search has completed.
      */
     private class SpotifySlashResultHandler implements AudioLoadResultHandler {
         private final SlashCommandEvent event;
-        private final AtomicInteger loaded;
+        private final AtomicReferenceArray<AudioTrack> orderedResults;
+        private final int index;
         private final AtomicInteger done;
         private final int total;
+        private final String playlistName;
 
         SpotifySlashResultHandler(SlashCommandEvent event,
-                AtomicInteger loaded, AtomicInteger done, int total) {
+                AtomicReferenceArray<AudioTrack> orderedResults, int index,
+                AtomicInteger done, int total, String playlistName) {
             this.event = event;
-            this.loaded = loaded;
+            this.orderedResults = orderedResults;
+            this.index = index;
             this.done = done;
             this.total = total;
+            this.playlistName = playlistName;
         }
 
-        private void addBestResult(AudioPlaylist playlist) {
-            if (!playlist.isSearchResult() || playlist.getTracks().isEmpty()) {
-                finish(false);
+        private void setResult(AudioTrack track) {
+            if (track != null && !bot.getConfig().isTooLong(track))
+                orderedResults.set(index, track);
+        }
+
+        private void finish() {
+            if (done.incrementAndGet() != total)
                 return;
-            }
-            AudioTrack track = playlist.getTracks().get(0);
-            if (bot.getConfig().isTooLong(track)) {
-                finish(false);
-                return;
-            }
+            // All searches done — add tracks in playlist order
             AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
-            handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
-            finish(true);
-        }
-
-        private void finish(boolean success) {
-            if (success)
-                loaded.incrementAndGet();
-            int d = done.incrementAndGet();
-            if (d == total) {
-                int l = loaded.get();
-                String msg = event.getClient().getSuccess()
-                        + " Loaded **" + l + "** of **" + total + "** Spotify tracks!"
-                        + (l < total ? "\n" + event.getClient().getWarning()
-                                + " " + (total - l) + " track(s) could not be found on YouTube." : "");
+            int loaded = 0;
+            for (int i = 0; i < total; i++) {
+                AudioTrack track = orderedResults.get(i);
+                if (track != null) {
+                    handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
+                    loaded++;
+                }
+            }
+            int missed = total - loaded;
+            String name = playlistName != null ? "playlist **" + playlistName + "**" : "a Spotify playlist";
+            if (loaded == 0) {
+                event.getHook().editOriginal(FormatUtil.filter(event.getClient().getWarning()
+                        + " Could not find any tracks from " + name + " on YouTube.")).queue();
+            } else {
+                String msg = event.getClient().getSuccess() + " Found " + name + " with `"
+                        + loaded + "` entries; added to the queue!"
+                        + (missed > 0 ? "\n" + event.getClient().getWarning() + " " + missed
+                                + " track(s) could not be found on YouTube." : "");
                 event.getHook().editOriginal(FormatUtil.filter(msg)).queue();
             }
         }
 
         @Override
         public void trackLoaded(AudioTrack track) {
-            if (bot.getConfig().isTooLong(track)) {
-                finish(false);
-                return;
-            }
-            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
-            handler.addTrack(new QueuedTrack(track, RequestMetadata.fromResultHandler(track, event)));
-            finish(true);
+            setResult(track);
+            finish();
         }
 
         @Override
         public void playlistLoaded(AudioPlaylist playlist) {
-            addBestResult(playlist);
+            if (playlist.isSearchResult() && !playlist.getTracks().isEmpty())
+                setResult(playlist.getTracks().get(0));
+            finish();
         }
 
         @Override
         public void noMatches() {
-            finish(false);
+            finish();
         }
 
         @Override
         public void loadFailed(FriendlyException throwable) {
-            finish(false);
+            finish();
         }
     }
 }
