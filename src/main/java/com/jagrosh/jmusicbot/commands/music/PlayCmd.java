@@ -145,25 +145,26 @@ public class PlayCmd extends MusicCommand {
                     || !event.getSelfMember().hasPermission(event.getTextChannel(), Permission.MESSAGE_ADD_REACTION))
                 m.editMessage(addMsg).queue();
             else {
-                new ButtonMenu.Builder()
-                        .setText(addMsg + "\n" + event.getClient().getWarning() + " This track has a playlist of **"
-                                + playlist.getTracks().size() + "** tracks attached. Select " + LOAD
-                                + " to load playlist.")
-                        .setChoices(LOAD, CANCEL)
-                        .setEventWaiter(bot.getWaiter())
-                        .setTimeout(30, TimeUnit.SECONDS)
-                        .setAction(re -> {
-                            if (re.getName().equals(LOAD))
-                                m.editMessage(addMsg + "\n" + event.getClient().getSuccess() + " Loaded **"
-                                        + loadPlaylist(playlist, track) + "** additional tracks!").queue();
-                            else
-                                m.editMessage(addMsg).queue();
-                        }).setFinalAction(m -> {
-                            try {
-                                m.clearReactions().queue();
-                            } catch (PermissionException ignore) {
-                            }
-                        }).build().display(m);
+                String userId = event.getAuthor().getId();
+                Button loadBtn = Button.success("play:load:" + userId, LOAD + " Load Full Playlist");
+                Button cancelBtn = Button.danger("play:cancel:" + userId, CANCEL + " Just This Track");
+                m.editMessage(addMsg + "\n" + event.getClient().getWarning() + " This track has a playlist of **"
+                        + playlist.getTracks().size() + "** tracks attached.")
+                        .setComponents(ActionRow.of(loadBtn, cancelBtn))
+                        .queue(msg -> bot.getWaiter().waitForEvent(
+                                ButtonInteractionEvent.class,
+                                e -> e.getComponentId().startsWith("play:") && e.getUser().getId().equals(userId),
+                                e -> {
+                                    if (e.getComponentId().equals("play:load:" + userId)) {
+                                        int loaded = loadPlaylist(playlist, track);
+                                        e.editMessage(addMsg + "\n" + event.getClient().getSuccess() + " Loaded **"
+                                                + loaded + "** additional tracks!").setComponents().queue();
+                                    } else {
+                                        e.editMessage(addMsg).setComponents().queue();
+                                    }
+                                },
+                                30, TimeUnit.SECONDS,
+                                () -> msg.editMessageComponents().queue()));
             }
         }
 

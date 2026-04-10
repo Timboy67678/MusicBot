@@ -11,6 +11,7 @@ services:
     #   ./data/Playlists/          ← created automatically on first run
     volumes:
       - ./data:/app/data
+      - ${MUSIC_DIR}:${MUSIC_DIR}:ro
 
     # Optional: forward logs to the host's syslog / journald
     logging:
