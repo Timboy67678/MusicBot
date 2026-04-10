@@ -62,7 +62,7 @@ public class SkiptoCmd extends DJCommand
         }
         handler.getQueue().skip(index - 1);
         event.reply(event.getClient().getSuccess() + " Skipped to **" + handler.getQueue().get(0).getTrack().getInfo().title + "**");
-        handler.getPlayer().stopTrack();
+        handler.skipTrack();
     }
 
     @Override
@@ -77,6 +77,6 @@ public class SkiptoCmd extends DJCommand
         }
         handler.getQueue().skip(index - 1);
         event.reply(event.getClient().getSuccess() + " Skipped to **" + handler.getQueue().get(0).getTrack().getInfo().title + "**").queue();
-        handler.getPlayer().stopTrack();
+        handler.skipTrack();
     }
 }

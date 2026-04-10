@@ -219,7 +219,7 @@ public class Listener extends ListenerAdapter {
         {
             String title = handler.getPlayer().getPlayingTrack().getInfo().title;
             event.deferEdit().queue();
-            handler.getPlayer().stopTrack();
+            handler.skipTrack();
             event.getHook().sendMessage(bot.getClient().getSuccess() + " Skipped **" + FormatUtil.filter(title) + "**").setEphemeral(true).queue();
             return;
         }
@@ -246,7 +246,7 @@ public class Listener extends ListenerAdapter {
         {
             String title = handler.getPlayer().getPlayingTrack().getInfo().title;
             event.deferEdit().queue();
-            handler.getPlayer().stopTrack();
+            handler.skipTrack();
             event.getHook().sendMessage(bot.getClient().getSuccess() + " Skipped **" + FormatUtil.filter(title)
                     + "** (vote passed: " + skippers + "/" + required + ")").setEphemeral(true).queue();
         }

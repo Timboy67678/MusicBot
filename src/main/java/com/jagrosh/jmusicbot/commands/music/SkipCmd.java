@@ -49,7 +49,7 @@ public class SkipCmd extends MusicCommand
         if(event.getAuthor().getIdLong() == rm.getOwner() || skipRatio == 0)
         {
             event.reply(event.getClient().getSuccess() + " Skipped **" + handler.getPlayer().getPlayingTrack().getInfo().title + "**");
-            handler.getPlayer().stopTrack();
+            handler.skipTrack();
         }
         else
         {
@@ -71,7 +71,7 @@ public class SkipCmd extends MusicCommand
             {
                 msg += "\n" + event.getClient().getSuccess() + " Skipped **" + handler.getPlayer().getPlayingTrack().getInfo().title
                     + "** " + (rm.getOwner() == 0L ? "(autoplay)" : "(requested by **" + FormatUtil.formatUsername(rm.user) + "**)");
-                handler.getPlayer().stopTrack();
+                handler.skipTrack();
             }
             event.reply(msg);
         }
@@ -87,7 +87,7 @@ public class SkipCmd extends MusicCommand
         if(event.getUser().getIdLong() == rm.getOwner() || skipRatio == 0)
         {
             String title = handler.getPlayer().getPlayingTrack().getInfo().title;
-            handler.getPlayer().stopTrack();
+            handler.skipTrack();
             event.reply(event.getClient().getSuccess() + " Skipped **" + title + "**").queue();
         }
         else
@@ -110,7 +110,7 @@ public class SkipCmd extends MusicCommand
             {
                 msg += "\n" + event.getClient().getSuccess() + " Skipped **" + handler.getPlayer().getPlayingTrack().getInfo().title
                     + "** " + (rm.getOwner() == 0L ? "(autoplay)" : "(requested by **" + FormatUtil.formatUsername(rm.user) + "**)");
-                handler.getPlayer().stopTrack();
+                handler.skipTrack();
             }
             event.reply(msg).queue();
         }
