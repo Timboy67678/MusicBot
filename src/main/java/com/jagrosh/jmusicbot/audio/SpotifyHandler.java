@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -266,7 +266,7 @@ public class SpotifyHandler {
     }
 
     private static HttpURLConnection openConnection(String url, String method) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+        HttpURLConnection con = (HttpURLConnection) URI.create(url).toURL().openConnection();
         con.setRequestMethod(method);
         con.setConnectTimeout(10_000);
         con.setReadTimeout(10_000);
