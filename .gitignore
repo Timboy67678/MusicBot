@@ -7,3 +7,4 @@
 *.txt
 nb*.xml
 dependency-reduced-pom.xml
+data/Playlists/*

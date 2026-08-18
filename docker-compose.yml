@@ -4,6 +4,8 @@ services:
     image: jmusicbot:latest
     container_name: jmusicbot
     restart: unless-stopped
+    depends_on:
+      - ytcipher
 
     # All runtime data lives in ./data on the host:
     #   ./data/config.txt          ← required, bot token / owner / settings
@@ -19,3 +21,20 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Remote YouTube signature decipherer, used by jmusicbot to work around
+  # youtube-source's local parser breaking against newer player scripts.
+  # See https://github.com/kikkia/yt-cipher. Reachable at http://ytcipher:8001
+  # from jmusicbot - set that as youtube-remote-cipher-url in config.txt.
+  ytcipher:
+    image: ghcr.io/kikkia/yt-cipher:master
+    container_name: ytcipher
+    restart: unless-stopped
+    environment:
+      - OVERRIDE_PLAYER_VARIANT=IAS
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

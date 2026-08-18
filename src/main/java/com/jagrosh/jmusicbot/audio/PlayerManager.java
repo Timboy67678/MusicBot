@@ -32,7 +32,9 @@ import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceM
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.YoutubeSourceOptions;
 import dev.lavalink.youtube.clients.Music;
+import dev.lavalink.youtube.clients.Tv;
 import dev.lavalink.youtube.clients.TvHtml5Simply;
 import dev.lavalink.youtube.clients.Web;
 import dev.lavalink.youtube.clients.AndroidVr;
@@ -62,13 +64,35 @@ public class PlayerManager extends DefaultAudioPlayerManager {
         TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms())
                 .forEach(t -> registerSourceManager(t));
 
+        // Local signature deciphering can fall behind YouTube's player script changes;
+        // a remote cipher server offloads that to an externally-maintained service.
+        YoutubeSourceOptions ytOptions = new YoutubeSourceOptions().setAllowSearch(true);
+        String ytCipherUrl = bot.getConfig().getYoutubeRemoteCipherUrl();
+        if(ytCipherUrl != null && !ytCipherUrl.isEmpty())
+            ytOptions.setRemoteCipher(ytCipherUrl, bot.getConfig().getYoutubeRemoteCipherPassword(), bot.getConfig().getYoutubeRemoteCipherUserAgent());
+
         YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(
-                true,
+                ytOptions,
                 new Music(),
                 new TvHtml5Simply(),
                 new AndroidVr(),
-                new Web());
+                new Web(),
+                // TV is the only client that actually uses the OAuth token configured below.
+                new Tv());
         yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
+        // Mitigates YouTube's "Sign in to confirm you're not a bot" errors by
+        // authenticating requests as a real account. With no saved token, this triggers
+        // the OAuth flow (URL + code printed to console) on the first login attempt.
+        String ytRefreshToken = bot.getConfig().getYoutubeOauthRefreshToken();
+        if(ytRefreshToken != null && !ytRefreshToken.isEmpty())
+            yt.useOauth2(ytRefreshToken, true);
+        else
+            yt.useOauth2(null, false);
+        // Covers the WEB client specifically, which OAuth above does not authenticate.
+        String ytPoToken = bot.getConfig().getYoutubePoToken();
+        String ytVisitorData = bot.getConfig().getYoutubeVisitorData();
+        if(ytPoToken != null && !ytPoToken.isEmpty() && ytVisitorData != null && !ytVisitorData.isEmpty())
+            Web.setPoTokenAndVisitorData(ytPoToken, ytVisitorData);
         registerSourceManager(yt);
 
         registerSourceManager(SoundCloudAudioSourceManager.createDefault());

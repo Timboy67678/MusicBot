@@ -1,14 +1,17 @@
+# syntax=docker/dockerfile:1
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
 FROM maven:3.9-eclipse-temurin-25 AS build
 
 WORKDIR /build
 
-# Cache dependencies before copying source so re-builds are faster
+# Cache dependencies before copying source so re-builds are faster.
+# The cache mount persists the local repo across builds even if this layer's
+# own Docker cache gets invalidated, so dependencies aren't re-downloaded.
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline
 
 COPY src ./src
-RUN mvn package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn package -DskipTests
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM eclipse-temurin:25-jre

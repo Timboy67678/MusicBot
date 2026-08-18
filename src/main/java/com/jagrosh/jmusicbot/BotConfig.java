@@ -40,7 +40,9 @@ public class BotConfig
     private Path path = null;
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
             successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji,
-            evalEngine, spotifyClientId, spotifyClientSecret;
+            evalEngine, spotifyClientId, spotifyClientSecret, youtubeOauthRefreshToken,
+            youtubePoToken, youtubeVisitorData, youtubeRemoteCipherUrl,
+            youtubeRemoteCipherPassword, youtubeRemoteCipherUserAgent;
     private boolean stayInChannel, songInGame, npImages, updateAlerts, useEval;
     private long owner, maxSeconds, aloneTimeUntilStop;
     private int maxYTPlaylistPages;
@@ -98,6 +100,12 @@ public class BotConfig
             skipRatio = config.getDouble("skipratio");
             spotifyClientId = config.hasPath("spotify-client-id") ? config.getString("spotify-client-id") : "";
             spotifyClientSecret = config.hasPath("spotify-client-secret") ? config.getString("spotify-client-secret") : "";
+            youtubeOauthRefreshToken = config.hasPath("youtube-oauth-refresh-token") ? config.getString("youtube-oauth-refresh-token") : "";
+            youtubePoToken = config.hasPath("youtube-po-token") ? config.getString("youtube-po-token") : "";
+            youtubeVisitorData = config.hasPath("youtube-visitor-data") ? config.getString("youtube-visitor-data") : "";
+            youtubeRemoteCipherUrl = config.hasPath("youtube-remote-cipher-url") ? config.getString("youtube-remote-cipher-url") : "";
+            youtubeRemoteCipherPassword = config.hasPath("youtube-remote-cipher-password") ? config.getString("youtube-remote-cipher-password") : "";
+            youtubeRemoteCipherUserAgent = config.hasPath("youtube-remote-cipher-user-agent") ? config.getString("youtube-remote-cipher-user-agent") : "";
             
             // we may need to write a new config file
             boolean write = false;
@@ -384,5 +392,35 @@ public class BotConfig
     public String getSpotifyClientSecret()
     {
         return spotifyClientSecret;
+    }
+
+    public String getYoutubeOauthRefreshToken()
+    {
+        return youtubeOauthRefreshToken;
+    }
+
+    public String getYoutubePoToken()
+    {
+        return youtubePoToken;
+    }
+
+    public String getYoutubeVisitorData()
+    {
+        return youtubeVisitorData;
+    }
+
+    public String getYoutubeRemoteCipherUrl()
+    {
+        return youtubeRemoteCipherUrl;
+    }
+
+    public String getYoutubeRemoteCipherPassword()
+    {
+        return youtubeRemoteCipherPassword;
+    }
+
+    public String getYoutubeRemoteCipherUserAgent()
+    {
+        return youtubeRemoteCipherUserAgent;
     }
 }

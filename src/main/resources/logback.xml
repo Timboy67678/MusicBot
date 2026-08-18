@@ -10,6 +10,10 @@
         </encoder>
     </appender>
 
+    <!-- Noisy, non-actionable: logs a full JSON dump whenever a single client's formats
+         are unusable, even when another client's fallback succeeds and playback works fine. -->
+    <logger name="dev.lavalink.youtube.clients.skeleton.StreamingNonMusicClient" level="ERROR"/>
+
     <root level="INFO">
         <appender-ref ref="Simple"/>
     </root>
