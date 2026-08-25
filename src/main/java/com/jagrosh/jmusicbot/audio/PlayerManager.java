@@ -34,6 +34,7 @@ import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import dev.lavalink.youtube.YoutubeSourceOptions;
 import dev.lavalink.youtube.clients.Music;
+import dev.lavalink.youtube.clients.MWeb;
 import dev.lavalink.youtube.clients.Tv;
 import dev.lavalink.youtube.clients.TvHtml5Simply;
 import dev.lavalink.youtube.clients.Web;
@@ -77,6 +78,8 @@ public class PlayerManager extends DefaultAudioPlayerManager {
                 new TvHtml5Simply(),
                 new AndroidVr(),
                 new Web(),
+                // Extra fallback that needs neither OAuth nor a poToken.
+                new MWeb(),
                 // TV is the only client that actually uses the OAuth token configured below.
                 new Tv());
         yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());

@@ -108,7 +108,10 @@
         <dependency>
             <groupId>dev.lavalink.youtube</groupId>
             <artifactId>common</artifactId>
-            <version>1.18.2</version>
+            <!-- Snapshot: 1.18.2 lacks the PS4 User-Agent fix for the TV client
+                 (https://github.com/lavalink-devs/youtube-source/pull/233), without
+                 which OAuth playback fails with "The page needs to be reloaded". -->
+            <version>f45bbb7aebfcbc1c553769e04af6cd43afa8b7c3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.github.jagrosh</groupId>
@@ -172,6 +175,10 @@
                         <mainClass>com.jagrosh.jmusicbot.JMusicBot</mainClass>
                         <addClasspath>true</addClasspath>
                         <classpathPrefix>libs/</classpathPrefix>
+                        <!-- Without this, SNAPSHOT deps get their timestamped remote
+                             filename in Class-Path, which doesn't match the plain
+                             "-SNAPSHOT" filename copy-dependencies puts in libs/. -->
+                        <useUniqueVersions>false</useUniqueVersions>
                     </manifest>
                 </archive>
             </configuration>
